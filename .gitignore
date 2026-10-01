@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Local MongoDB Replica Set Database & Logs
+data/
+*.log
+
+# Environment variables
+.env
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,39 @@
+{
+  "name": "modern_data_stores",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prestart": "lsof -ti:3000,1883 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true",
+    "start": "node backend/server.js",
+    "server:stop": "lsof -ti:3000,1883 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true",
+    "sim": "node simulator/gate_simulator.js",
+    "sim:15s": "TELEMETRY_INTERVAL_MS=15000 node simulator/gate_simulator.js",
+    "sim:5min": "TELEMETRY_INTERVAL_MS=300000 node simulator/gate_simulator.js",
+    "sim:unauthorized": "node scripts/simulate_unauthorized.js",
+    "generate": "node scripts/continuous_sensor_generator.js",
+    "generate:15s": "TELEMETRY_INTERVAL_MS=15000 node scripts/continuous_sensor_generator.js",
+    "generate:5min": "TELEMETRY_INTERVAL_MS=300000 node scripts/continuous_sensor_generator.js",
+    "seed": "node scripts/seed_dataset.js",
+    "test": "node tests/api.test.js",
+    "test:email": "node scripts/test_email.js",
+    "benchmark": "node scripts/benchmark_queries.js",
+    "cluster:start": "./scripts/start_replica_set.sh",
+    "cluster:stop": "./scripts/stop_replica_set.sh",
+    "report:pdf": "\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --print-to-pdf=\"report/IoThings_Main_Gate_Automation_Report.pdf\" \"file://$(pwd)/report/IoThings_Main_Gate_Automation_Report.html\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "aedes": "^1.2.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "mongodb": "^7.6.0",
+    "mongoose": "^9.10.2",
+    "mqtt": "^5.16.0",
+    "nodemailer": "^10.0.10"
+  }
+}

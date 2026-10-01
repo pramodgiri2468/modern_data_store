@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoThings - Automated Smart House Main Gate Controller</title>
+  <meta name="description" content="IoThings SME Smart House Main Gate Automation System. Powered by MongoDB 3-Node Distributed Replica Set, MQTT Telemetry and NodeJS API.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Top App Navigation / Status Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-logo-badge">⚡</div>
+        <div class="brand-text">
+          <h1>IoThings Home Automation</h1>
+          <p>UK SME Smart Perimeter & Main Gate Telemetry Hub</p>
+        </div>
+      </div>
+      <div class="system-status-pills">
+        <div class="status-pill sound-pill" id="sound-status-pill" title="Click to toggle Siren Ring Sound">
+          <span class="sound-dot" id="sound-dot"></span>
+          <span>Siren Ring: <strong id="sound-state-text">ENABLED</strong></span>
+        </div>
+        <div class="status-pill" id="cluster-status-pill">
+          <span class="status-dot active pulse" id="cluster-dot"></span>
+          <span>MongoDB Replica Set: <strong id="cluster-state-text">rs0 (3 Nodes)</strong></span>
+        </div>
+        <div class="status-pill" id="mqtt-status-pill">
+          <span class="status-dot active" id="mqtt-dot"></span>
+          <span>MQTT Broker: <strong id="mqtt-state-text">1883 ONLINE</strong></span>
+        </div>
+        <div class="status-pill">
+          <span>Server Time: <strong id="live-clock">--:--:--</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Emergency Intrusion Alarm Siren Banner (Web Audio + Visual Alert) -->
+  <div id="alarm-banner" class="alarm-banner hidden">
+    <div class="alarm-banner-content">
+      <div class="alarm-left">
+        <div class="alarm-bell-icon">🚨</div>
+        <div class="alarm-text-block">
+          <div class="alarm-title">
+            <span>SECURITY ALARM RINGING</span>
+            <span class="alarm-title-tag">UNAUTHORIZED INTRUSION</span>
+          </div>
+          <div class="alarm-details" id="alarm-details-text">
+            Unauthorized entry attempt detected at Main Gate! Alert email dispatched to <strong>pg016742@gmail.com</strong>.
+          </div>
+        </div>
+      </div>
+      <div class="alarm-actions">
+        <a id="alarm-view-email-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-alarm-view" style="display: none;">
+          ✉ View Dispatched Email ↗
+        </a>
+        <button id="btn-silence-alarm" class="btn-silence">
+          🔕 Silence Alarm Siren
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Content -->
+  <main class="main-wrapper">
+
+    <!-- Top Section: Interactive Gate Visualizer & Physical Controls -->
+    <div class="grid-top">
+      <!-- 1. Visual Gate Component -->
+      <section class="glass-card" aria-label="Gate Visual Representation">
+        <div class="card-title">
+          <span><span class="icon">🚪</span>Smart Main Gate - Real-Time Visualizer</span>
+          <span class="state-badge state-LOCKED" id="gate-badge">LOCKED</span>
+        </div>
+
+        <div class="gate-visual-wrapper" id="visual-wrapper">
+          <div class="gate-overhead-stage">
+            <div class="pillar left"><div class="pillar-light"></div></div>
+            
+            <div class="gate-leaves-container" id="gate-leaves-box">
+              <div class="safety-beam-line" id="safety-beam"></div>
+              <div class="deadbolt-lock-icon" id="deadbolt-icon" title="Magnetic Deadbolt Lock">🔒</div>
+              <div class="gate-leaf left" id="leaf-left">
+                <div class="gate-leaf-bars"></div>
+              </div>
+              <div class="gate-leaf right" id="leaf-right">
+                <div class="gate-leaf-bars"></div>
+              </div>
+            </div>
+
+            <div class="pillar right"><div class="pillar-light"></div></div>
+          </div>
+
+          <div class="gate-status-footer">
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">PHYSICAL SENSORS:</span>
+              <strong id="reed-state-text" style="margin-left: 0.4rem; font-size: 0.8rem; color: #93c5fd;">REED: CLOSED</strong>
+              <span style="margin: 0 0.5rem; color: var(--border-color);">|</span>
+              <strong id="lock-state-text" style="font-size: 0.8rem; color: #fb7185;">LOCK: ENGAGED</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">MOTOR LOAD:</span>
+              <strong id="motor-amps-text" style="font-size: 0.8rem; color: #34d399;">0.0 A</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gate Manual Command Buttons -->
+        <div class="controls-grid">
+          <button class="btn btn-open" id="btn-open-gate">
+            <span>▶</span> Open Gate
+          </button>
+          <button class="btn btn-close" id="btn-close-gate">
+            <span>◀</span> Close Gate
+          </button>
+          <button class="btn btn-lock" id="btn-lock-gate">
+            <span>🔒</span> Lock Deadbolt
+          </button>
+          <button class="btn btn-secondary" id="btn-unlock-gate">
+            <span>🔓</span> Unlock Deadbolt
+          </button>
+          <button class="btn btn-secondary" id="btn-hold-gate">
+            <span>⏸</span> Hold Open
+          </button>
+          <button class="btn btn-stop" id="btn-stop-gate">
+            <span>🛑</span> Emergency Stop
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. IoT Sensor Simulation Laboratory -->
+      <section class="glass-card" aria-label="IoT Sensor Simulation">
+        <div class="card-title">
+          <span><span class="icon">🧪</span>IoT Sensor Event Simulator</span>
+          <span style="font-size: 0.75rem; color: var(--accent-indigo);">MQTT Pub/Sub Ingestion</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Test end-to-end automation pipelines, safety obstacle auto-reverse, security alerts, and MongoDB audit logging:
+        </p>
+
+        <div class="sim-actions-grid">
+          <button class="btn-sim" id="sim-rfid-resident">
+            <span>💳</span>
+            <div>
+              <div>Resident Keyfob Scan</div>
+              <small style="opacity: 0.7;">Dr. Jane Davies (RFID-8842-A)</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-alpr-vehicle">
+            <span>🚗</span>
+            <div>
+              <div>Resident Vehicle ALPR</div>
+              <small style="opacity: 0.7;">Plate: BC24-UKS (Auto-Open)</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-rfid-denied" style="border-color: rgba(239, 68, 68, 0.4);">
+            <span>🚫</span>
+            <div>
+              <div>Unregistered RFID</div>
+              <small style="opacity: 0.7;">Unknown Tag (Gate Locked + Email)</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-person-denied" style="border-color: rgba(239, 68, 68, 0.4);">
+            <span>🚷</span>
+            <div>
+              <div>Unauthorized Person</div>
+              <small style="opacity: 0.7;">Perimeter Intrusion Alert Email</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-alpr-denied" style="border-color: rgba(239, 68, 68, 0.4);">
+            <span>🛑</span>
+            <div>
+              <div>Unknown Vehicle</div>
+              <small style="opacity: 0.7;">Plate Denied (Email Alert)</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-obstacle">
+            <span>⚠️</span>
+            <div>
+              <div>Obstacle in Beam</div>
+              <small style="opacity: 0.7;">Safety Auto-Reverse Stop</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-tamper" style="grid-column: span 2; border-color: rgba(244, 63, 94, 0.4);">
+            <span>🚨</span>
+            <div>
+              <div>Enclosure Tamper Vibration (3.8G)</div>
+              <small style="opacity: 0.7;">Dispatches CRITICAL Security Anomaly Email</small>
+            </div>
+          </button>
+        </div>
+
+        <div id="sim-feedback-box" style="margin-top: 1rem; padding: 0.6rem 0.85rem; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); font-size: 0.75rem; color: #a5b4fc; min-height: 38px; display: flex; align-items: center;">
+          Ready to dispatch MQTT simulation events...
+        </div>
+      </section>
+    </div>
+
+    <!-- Live Telemetry Stream Cards -->
+    <section class="glass-card" aria-label="Real-time Telemetry Sensors">
+      <div class="card-title">
+        <span><span class="icon">📊</span>Real-Time Sensor Telemetry Metrics (Continuous 15s Interval)</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(6, 182, 212, 0.3);">
+            ⏱ Interval: <strong>15s (Real-Time)</strong>
+          </span>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-gen-5min-telemetry">
+            ⚡ +1 Sample
+          </button>
+          <span style="font-size: 0.75rem; color: var(--text-dim);" id="telemetry-refresh-time">Updated: Just now</span>
+        </div>
+      </div>
+
+      <!-- Primary 3 Core Sensors Grid -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+        
+        <!-- Sensor 1: Photocell -->
+        <div class="telemetry-item" style="border-top: 3px solid var(--accent-cyan);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="telemetry-label">1. Optical Safety Photocell</div>
+            <span class="state-badge" id="photocell-health-badge" style="font-size: 0.65rem; padding: 2px 8px; background: rgba(16, 185, 129, 0.15); color: #34d399;">HEALTHY</span>
+          </div>
+          <div class="telemetry-val" id="val-photocell-signal">96.0 <span style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">% Signal</span></div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="bar-photocell-signal" style="width: 96%; background: linear-gradient(90deg, #06b6d4, #10b981);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem;">
+            <span>Beam: <strong id="val-beam-continuity" style="color: #34d399;">CONTINUOUS</strong></span>
+            <span id="photocell-lens-status" style="color: #9ca3af;">Lenses Clean</span>
+          </div>
+        </div>
+
+        <!-- Sensor 2: Limit Switch -->
+        <div class="telemetry-item" style="border-top: 3px solid var(--accent-emerald);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="telemetry-label">2. Mechanical Limit Switch</div>
+            <span class="state-badge" id="limitswitch-state-badge" style="font-size: 0.65rem; padding: 2px 8px; background: rgba(59, 130, 246, 0.15); color: #93c5fd;">RESTING</span>
+          </div>
+          <div class="telemetry-val" id="val-limitswitch-resting" style="font-size: 1.25rem; color: #60a5fa;">FULLY_CLOSED</div>
+          <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.75rem;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Ambient Motor Temp:</span>
+              <strong id="val-limitswitch-temp" style="color: #f3f4f6;">21.5 °C</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Standby Power Usage:</span>
+              <strong id="val-limitswitch-power" style="color: #34d399;">2.10 W</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensor 3: RFID Reader -->
+        <div class="telemetry-item" style="border-top: 3px solid var(--accent-purple);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="telemetry-label">3. Contactless RFID Reader</div>
+            <span class="state-badge" id="rfid-heartbeat-badge" style="font-size: 0.65rem; padding: 2px 8px; background: rgba(139, 92, 246, 0.15); color: #c084fc;">HEARTBEAT: OK</span>
+          </div>
+          <div class="telemetry-val" id="val-rfid-noise">-82.5 <span style="font-size: 0.85rem; font-weight: 400; color: var(--text-muted);">dBm Noise</span></div>
+          <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.75rem;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Antenna Status:</span>
+              <strong id="val-rfid-antenna" style="color: #34d399;">OPTIMAL (TUNED)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Operational Pulse:</span>
+              <strong style="color: #c084fc;">Active Heartbeat</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Secondary Telemetry Row -->
+      <div class="telemetry-grid">
+        <div class="telemetry-item">
+          <div class="telemetry-label">Driveway Clearance Distance</div>
+          <div class="telemetry-val" id="val-distance">250 <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted);">cm</span></div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="bar-distance" style="width: 80%;"></div>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-label">Perimeter PIR Motion</div>
+          <div class="telemetry-val" id="val-pir" style="color: var(--accent-emerald);">CLEAR</div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);" id="pir-subtext">No pedestrian in perimeter</span>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-label">Actuator Motor Current</div>
+          <div class="telemetry-val" id="val-motor-amps">0.0 <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted);">Amps</span></div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Peak tolerance: 6.0 A</span>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-label">12V Backup Battery</div>
+          <div class="telemetry-val" id="val-battery">12.8 <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted);">V</span></div>
+          <span style="font-size: 0.7rem; color: #34d399;">Float Charge Normal</span>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-label">Tamper Vibration</div>
+          <div class="telemetry-val" id="val-vibration">0.02 <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted);">G</span></div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Threshold: 1.50 G</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MongoDB 3-Node Replica Set Topology Health -->
+    <section class="glass-card" aria-label="MongoDB Replica Set Status">
+      <div class="card-title">
+        <span><span class="icon">🗄️</span>MongoDB 3-Node Distributed Replica Set Architecture (IoThings Core)</span>
+        <button class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.75rem;" id="btn-refresh-cluster">⟳ Re-check Cluster</button>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Delivers high availability, automated failover, majority write durability (ACID), and distributed read throughput across 3 independent mongod instances:
+      </p>
+
+      <div class="cluster-nodes-row" id="cluster-nodes-container">
+        <!-- Injected via JavaScript -->
+        <div class="node-card primary">
+          <div class="node-header">
+            <span class="status-dot active"></span>
+            <span>127.0.0.1:27017</span>
+          </div>
+          <div class="node-meta">State: <strong>PRIMARY</strong> | Health: 100%</div>
+          <div class="node-meta">Replica Role: Write Leader & Majority Consensus</div>
+        </div>
+
+        <div class="node-card">
+          <div class="node-header">
+            <span class="status-dot active"></span>
+            <span>127.0.0.1:27018</span>
+          </div>
+          <div class="node-meta">State: <strong>SECONDARY</strong> | Health: 100%</div>
+          <div class="node-meta">Replica Role: Real-time Oplog Sync & Read Pool</div>
+        </div>
+
+        <div class="node-card">
+          <div class="node-header">
+            <span class="status-dot active"></span>
+            <span>127.0.0.1:27019</span>
+          </div>
+          <div class="node-meta">State: <strong>SECONDARY</strong> | Health: 100%</div>
+          <div class="node-meta">Replica Role: Real-time Oplog Sync & Voting Member</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mid Section: Access Policies (CRUD) & Analytics -->
+    <div class="grid-top">
+      <!-- Access Policy Management (CRUD) -->
+      <section class="glass-card" aria-label="Access Policy CRUD">
+        <div class="card-title">
+          <span><span class="icon">🔑</span>Authorized Access Policies (CRUD Provision)</span>
+          <button class="btn btn-open" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;" id="btn-open-add-policy">+ Add Credential</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="crud-table" id="policies-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Identifier</th>
+                <th>Holder</th>
+                <th>Role</th>
+                <th>Alert Email</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="policies-tbody">
+              <!-- Dynamically populated -->
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading policies...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Analytics & Predictive Insights for SME -->
+      <section class="glass-card" aria-label="Usage Analytics and Predictions">
+        <div class="card-title">
+          <span><span class="icon">📈</span>24-Hour Gate Traffic & Activity Heatmap</span>
+          <span style="font-size: 0.75rem; color: var(--accent-cyan);">Aggregation Pipeline</span>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Analyzes historical sensor activations to predict peak commute & delivery arrival hours:
+        </p>
+
+        <div class="chart-container">
+          <canvas id="traffic-canvas" width="500" height="200"></canvas>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); font-size: 0.8rem;">
+          <div>
+            <span style="color: var(--text-muted);">Motor Health Score:</span>
+            <strong id="motor-health-score" style="color: #34d399; margin-left: 0.4rem;">92 / 100 (OPTIMAL)</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted);">Total 30-Day Cycles:</span>
+            <strong id="total-cycles-count" style="margin-left: 0.4rem;">--</strong>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Live Email Notifications Dispatch Log -->
+    <section class="glass-card" aria-label="Email Notification Alerts">
+      <div class="card-title">
+        <span><span class="icon">📧</span>Automated Security & Access Email Notification Feed</span>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-test-chime" title="Test Authorized Access Chime Sound">
+            🔔 Ring Access Chime
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" id="btn-test-siren" title="Test Security Siren Ring Audio">
+            🚨 Ring Alarm Siren
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-test-email">
+            ✉ Test Authorized Email
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" id="btn-test-unauthorized-email">
+            🚨 Test Unauthorized Alert
+          </button>
+        </div>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Real-time security notifications dispatched to <code style="color: #38bdf8;">pg016742@gmail.com</code> for both <strong>Authorized Resident Entries</strong> and <strong>Unauthorized Intrusion Attempts</strong>:
+      </p>
+      <div class="events-stream" id="notifications-stream-list" style="max-height: 180px;">
+        <div style="padding: 0.75rem; color: var(--text-muted); text-align: center;">Waiting for entry email notifications...</div>
+      </div>
+    </section>
+
+    <!-- Live Event Audit Feed -->
+    <section class="glass-card" aria-label="Live Sensor Event Audit Feed">
+      <div class="card-title">
+        <span><span class="icon">📜</span>Gate Activation & Security Audit Stream (MongoDB Collection: gate_events)</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" id="filter-all">All</button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" id="filter-security">Security</button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" id="filter-safety">Safety</button>
+        </div>
+      </div>
+
+      <div class="events-stream" id="events-stream-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Add Credential Modal (CRUD CREATE) -->
+  <div class="modal-overlay" id="add-policy-modal">
+    <div class="modal-content">
+      <div class="card-title">
+        <span>Register Authorized Access Credential</span>
+        <button id="btn-close-modal" style="background: none; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer;">✕</button>
+      </div>
+
+      <form id="add-policy-form">
+        <div class="form-group">
+          <label for="policy-type">Credential Type</label>
+          <select id="policy-type" class="form-control" required>
+            <option value="RFID_TAG">Contactless RFID Keyfob / Card</option>
+            <option value="LICENSE_PLATE">Automated License Plate (ALPR)</option>
+            <option value="PIN_CODE">Digital PIN Code</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="policy-identifier">Credential Identifier (e.g. RFID-9900-X or Plate AB24-XYZ)</label>
+          <input type="text" id="policy-identifier" class="form-control" placeholder="RFID-4421-B" required>
+        </div>
+
+        <div class="form-group">
+          <label for="policy-name">Credential Holder Name</label>
+          <input type="text" id="policy-name" class="form-control" placeholder="E.g. Alexander Smith" required>
+        </div>
+
+        <div class="form-group">
+          <label for="policy-email">Notification Alert Email (Particular Mail)</label>
+          <input type="email" id="policy-email" class="form-control" placeholder="e.g. resident@example.co.uk">
+          <small style="font-size: 0.7rem; color: var(--text-muted);">Dispatches real-time email security notification to this address upon entry.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="policy-role">User Role / Classification</label>
+          <select id="policy-role" class="form-control">
+            <option value="RESIDENT">Resident (24/7 Access)</option>
+            <option value="DELIVERY">Delivery Courier</option>
+            <option value="STAFF">Maintenance & Staff</option>
+            <option value="GUEST">Guest Visitor</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-open">Save to MongoDB</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
