@@ -92,6 +92,11 @@ function initMqttClient(brokerUrl = 'mqtt://127.0.0.1:1883') {
 }
 
 async function handleTelemetryMessage(homeId, data) {
+  const isClosed = (data.status === 'IDLE_CLOSED' || data.status === 'LOCKED');
+  const isOpen = (data.status === 'OPEN');
+  const defaultResting = isClosed ? 'FULLY_CLOSED' : (isOpen ? 'FULLY_OPEN' : 'AJAR');
+  const defaultStandby = isClosed ? 2.1 : (isOpen ? 2.3 : 48.0);
+
   const photocell = data.photocell || {
     healthStatus: (data.metrics?.obstacleDistanceCm < 45 ? 'DIRTY_LENS_WARNING' : 'HEALTHY'),
     opticalSignalStrength: data.photocell?.opticalSignalStrength ?? (data.metrics?.obstacleDistanceCm < 45 ? 52.0 : 96.0),
@@ -99,9 +104,9 @@ async function handleTelemetryMessage(homeId, data) {
   };
 
   const limitSwitch = data.limitSwitch || {
-    restingState: (data.status === 'IDLE_CLOSED' || data.status === 'LOCKED') ? 'FULLY_CLOSED' : (data.status === 'OPEN' ? 'FULLY_OPEN' : 'AJAR'),
+    restingState: defaultResting,
     ambientMotorTemperatureC: data.metrics?.motorTemperatureC || 21.5,
-    standbyPowerWatts: (data.status === 'IDLE_CLOSED' || data.status === 'LOCKED') ? 2.1 : 48.0
+    standbyPowerWatts: defaultStandby
   };
 
   const rfidReader = data.rfidReader || {
@@ -109,6 +114,8 @@ async function handleTelemetryMessage(homeId, data) {
     antennaStatus: 'OPTIMAL',
     backgroundNoiseDbm: data.rfidReader?.backgroundNoiseDbm ?? -82.0
   };
+
+  const reedSwitchState = data.metrics?.reedSwitchState || (isOpen ? 'OPEN' : (isClosed ? 'CLOSED' : 'AJAR'));
 
   // Update in-memory state
   currentGateState = {
@@ -119,8 +126,8 @@ async function handleTelemetryMessage(homeId, data) {
     lockEngaged: data.lockEngaged !== undefined ? data.lockEngaged : currentGateState.lockEngaged,
     obstacleDistanceCm: data.metrics?.obstacleDistanceCm || 250,
     pirMotionDetected: !!data.metrics?.pirMotionDetected,
-    reedSwitchState: data.metrics?.reedSwitchState || 'CLOSED',
-    motorCurrentAmps: data.metrics?.motorCurrentAmps || 0.0,
+    reedSwitchState,
+    motorCurrentAmps: data.metrics?.motorCurrentAmps || (isOpen || isClosed ? 0.0 : 3.8),
     photocell,
     limitSwitch,
     rfidReader,
@@ -141,8 +148,8 @@ async function handleTelemetryMessage(homeId, data) {
       metrics: {
         obstacleDistanceCm: data.metrics?.obstacleDistanceCm ?? 250,
         pirMotionDetected: !!data.metrics?.pirMotionDetected,
-        reedSwitchState: data.metrics?.reedSwitchState || 'CLOSED',
-        motorCurrentAmps: data.metrics?.motorCurrentAmps || 0.0,
+        reedSwitchState,
+        motorCurrentAmps: data.metrics?.motorCurrentAmps || (isOpen || isClosed ? 0.0 : 3.8),
         motorTemperatureC: limitSwitch.ambientMotorTemperatureC,
         batteryBackupVoltage: data.metrics?.batteryBackupVoltage || 12.8,
         ambientLightLux: data.metrics?.ambientLightLux || 450,
@@ -190,17 +197,6 @@ async function handleEventMessage(homeId, data) {
 
       // Automatically trigger gate OPEN command!
       publishCommand(homeId, data.gateId || 'gate_main_01', 'OPEN', `Authorized RFID: ${policy.holderName}`);
-
-      // Dispatch email notification to particular recipient
-      sendAuthorizedEntryNotification({
-        policy,
-        homeId,
-        gateId: data.gateId || 'gate_main_01',
-        credentialType: 'RFID_TAG',
-        identifier: tagId,
-        method: 'RFID_CONTACTLESS_SCAN',
-        timestamp: new Date()
-      }).catch(err => console.error('[MQTT Handler] Email notification failed:', err));
     } else {
       console.warn(`[ACCESS DENIED] Unrecognized or revoked RFID tag: ${tagId}`);
       data.eventType = 'RFID_ENTRY_DENIED';
@@ -230,17 +226,6 @@ async function handleEventMessage(homeId, data) {
       data.payload.userRole = policy.userRole;
 
       publishCommand(homeId, data.gateId || 'gate_main_01', 'OPEN', `Authorized Vehicle Plate: ${policy.holderName}`);
-
-      // Dispatch email notification to particular recipient
-      sendAuthorizedEntryNotification({
-        policy,
-        homeId,
-        gateId: data.gateId || 'gate_main_01',
-        credentialType: 'LICENSE_PLATE',
-        identifier: plateNumber,
-        method: 'ALPR_VEHICLE_SCAN',
-        timestamp: new Date()
-      }).catch(err => console.error('[MQTT Handler] Email notification failed:', err));
     } else {
       console.warn(`[ACCESS DENIED] Unrecognized vehicle plate: ${plateNumber}`);
       data.eventType = 'ALPR_ENTRY_DENIED';
@@ -303,20 +288,236 @@ async function handleEventMessage(homeId, data) {
   }
 }
 
+let actuationTimer = null;
+let autoCloseTimer = null;
+
 function handleStatusMessage(homeId, data) {
   if (data.status) {
     currentGateState.status = data.status;
     if (data.lockEngaged !== undefined) currentGateState.lockEngaged = data.lockEngaged;
-    if (data.reedSwitchState) currentGateState.reedSwitchState = data.reedSwitchState;
+
+    const isClosed = (data.status === 'LOCKED' || data.status === 'IDLE_CLOSED');
+    const isOpen = (data.status === 'OPEN');
+
+    if (data.reedSwitchState) {
+      currentGateState.reedSwitchState = data.reedSwitchState;
+    } else {
+      currentGateState.reedSwitchState = isOpen ? 'OPEN' : (isClosed ? 'CLOSED' : 'AJAR');
+    }
+
+    const restingState = isClosed ? 'FULLY_CLOSED' : (isOpen ? 'FULLY_OPEN' : 'AJAR');
+    const standbyPowerWatts = isClosed ? 2.1 : (isOpen ? 2.3 : 48.0);
+
+    currentGateState.limitSwitch = {
+      ...currentGateState.limitSwitch,
+      restingState,
+      standbyPowerWatts
+    };
+
     currentGateState.lastUpdated = new Date();
     notifyListeners();
   }
 }
 
+async function persistTelemetryDoc(status, restingState, reedState, standbyPower) {
+  try {
+    const doc = new GateTelemetry({
+      homeId: currentGateState.homeId || 'home_uk_01',
+      gateId: currentGateState.gateId || 'gate_main_01',
+      status: status,
+      lockEngaged: (status === 'LOCKED' || status === 'IDLE_CLOSED'),
+      photocell: currentGateState.photocell,
+      limitSwitch: {
+        restingState: restingState,
+        ambientMotorTemperatureC: currentGateState.limitSwitch.ambientMotorTemperatureC,
+        standbyPowerWatts: standbyPower
+      },
+      rfidReader: currentGateState.rfidReader,
+      metrics: {
+        obstacleDistanceCm: currentGateState.obstacleDistanceCm,
+        pirMotionDetected: currentGateState.pirMotionDetected,
+        reedSwitchState: reedState,
+        motorCurrentAmps: currentGateState.motorCurrentAmps,
+        motorTemperatureC: currentGateState.limitSwitch.ambientMotorTemperatureC,
+        batteryBackupVoltage: 12.8,
+        ambientLightLux: 520,
+        tamperVibrationG: 0.02
+      },
+      timestamp: new Date()
+    });
+    await doc.save();
+  } catch (e) {
+    // Non-fatal
+  }
+}
+
+function executeActuationSequence(homeId, gateId, action) {
+  if (action === 'HOLD_OPEN') {
+    if (actuationTimer) clearTimeout(actuationTimer);
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+    currentGateState = {
+      ...currentGateState,
+      status: 'OPEN',
+      lockEngaged: false,
+      reedSwitchState: 'OPEN',
+      motorCurrentAmps: 0.0,
+      limitSwitch: {
+        ...currentGateState.limitSwitch,
+        restingState: 'FULLY_OPEN',
+        standbyPowerWatts: 2.3
+      },
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+    persistTelemetryDoc('OPEN', 'FULLY_OPEN', 'OPEN', 2.3);
+    return;
+  }
+
+  if (action === 'OPEN') {
+    if (actuationTimer) clearTimeout(actuationTimer);
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+
+    // 1. Immediately transit to OPENING
+    currentGateState = {
+      ...currentGateState,
+      status: 'OPENING',
+      lockEngaged: false,
+      reedSwitchState: 'AJAR',
+      motorCurrentAmps: 3.8,
+      limitSwitch: {
+        ...currentGateState.limitSwitch,
+        restingState: 'AJAR',
+        standbyPowerWatts: 48.0
+      },
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+
+    // 2. Reach FULLY_OPEN after 3.5s
+    actuationTimer = setTimeout(() => {
+      currentGateState = {
+        ...currentGateState,
+        status: 'OPEN',
+        lockEngaged: false,
+        reedSwitchState: 'OPEN',
+        motorCurrentAmps: 0.0,
+        limitSwitch: {
+          ...currentGateState.limitSwitch,
+          restingState: 'FULLY_OPEN',
+          standbyPowerWatts: 2.3
+        },
+        lastUpdated: new Date()
+      };
+      notifyListeners();
+      persistTelemetryDoc('OPEN', 'FULLY_OPEN', 'OPEN', 2.3);
+
+      // 3. Auto-close after 12 seconds
+      autoCloseTimer = setTimeout(() => {
+        executeActuationSequence(homeId, gateId, 'CLOSE');
+      }, 12000);
+    }, 3500);
+
+    return;
+  }
+
+  if (action === 'CLOSE') {
+    if (actuationTimer) clearTimeout(actuationTimer);
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+
+    currentGateState = {
+      ...currentGateState,
+      status: 'CLOSING',
+      lockEngaged: false,
+      reedSwitchState: 'AJAR',
+      motorCurrentAmps: 4.1,
+      limitSwitch: {
+        ...currentGateState.limitSwitch,
+        restingState: 'AJAR',
+        standbyPowerWatts: 48.0
+      },
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+
+    // Reach FULLY_CLOSED after 3.5s
+    actuationTimer = setTimeout(() => {
+      currentGateState = {
+        ...currentGateState,
+        status: 'LOCKED',
+        lockEngaged: true,
+        reedSwitchState: 'CLOSED',
+        motorCurrentAmps: 0.0,
+        limitSwitch: {
+          ...currentGateState.limitSwitch,
+          restingState: 'FULLY_CLOSED',
+          standbyPowerWatts: 2.1
+        },
+        lastUpdated: new Date()
+      };
+      notifyListeners();
+      persistTelemetryDoc('LOCKED', 'FULLY_CLOSED', 'CLOSED', 2.1);
+    }, 3500);
+    return;
+  }
+
+  if (action === 'LOCK') {
+    if (actuationTimer) clearTimeout(actuationTimer);
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+    currentGateState = {
+      ...currentGateState,
+      status: 'LOCKED',
+      lockEngaged: true,
+      reedSwitchState: 'CLOSED',
+      motorCurrentAmps: 0.0,
+      limitSwitch: {
+        ...currentGateState.limitSwitch,
+        restingState: 'FULLY_CLOSED',
+        standbyPowerWatts: 2.1
+      },
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+    persistTelemetryDoc('LOCKED', 'FULLY_CLOSED', 'CLOSED', 2.1);
+    return;
+  }
+
+  if (action === 'UNLOCK') {
+    currentGateState = {
+      ...currentGateState,
+      status: 'IDLE_CLOSED',
+      lockEngaged: false,
+      reedSwitchState: 'CLOSED',
+      motorCurrentAmps: 0.0,
+      limitSwitch: {
+        ...currentGateState.limitSwitch,
+        restingState: 'FULLY_CLOSED',
+        standbyPowerWatts: 2.1
+      },
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+    return;
+  }
+
+  if (action === 'STOP') {
+    if (actuationTimer) clearTimeout(actuationTimer);
+    if (autoCloseTimer) clearTimeout(autoCloseTimer);
+    currentGateState = {
+      ...currentGateState,
+      motorCurrentAmps: 0.0,
+      lastUpdated: new Date()
+    };
+    notifyListeners();
+  }
+}
+
 function publishCommand(homeId, gateId, action, reason = '') {
+  // Always trigger internal actuation sequence (ensuring standalone and simulated parity)
+  executeActuationSequence(homeId, gateId, action);
+
   if (!client || !client.connected) {
-    console.warn('[MQTT Client] Cannot publish command: MQTT client not connected');
-    return false;
+    console.warn('[MQTT Client] Note: MQTT client not connected yet, executed internal state actuation');
+    return true;
   }
 
   const topic = `iothings/home/${homeId}/gate/commands`;
@@ -347,10 +548,23 @@ function publishEvent(homeId, eventData) {
   return true;
 }
 
+function publishTelemetry(homeId, telemetryData) {
+  if (!client || !client.connected) {
+    return false;
+  }
+
+  const topic = `iothings/home/${homeId}/gate/telemetry`;
+  const payload = JSON.stringify(telemetryData);
+
+  client.publish(topic, payload, { qos: 0 });
+  return true;
+}
+
 module.exports = {
   initMqttClient,
   publishCommand,
   publishEvent,
+  publishTelemetry,
   registerStateListener,
   getGateState: () => currentGateState,
   setGateState: (partial) => { currentGateState = { ...currentGateState, ...partial }; notifyListeners(); }

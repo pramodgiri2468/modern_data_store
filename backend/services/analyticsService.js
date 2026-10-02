@@ -211,11 +211,17 @@ async function getSensorHealthAnalytics(gateId = 'gate_main_01') {
         beamBreakCount: {
           $sum: { $cond: [{ $eq: ['$photocell.beamContinuity', false] }, 1, 0] }
         },
-        // Limit Switch stats
+        // Limit Switch stats (Dual Boundary: Fully Closed + Fully Open)
         avgStandbyPower: { $avg: '$limitSwitch.standbyPowerWatts' },
         avgAmbientTemp: { $avg: '$limitSwitch.ambientMotorTemperatureC' },
         fullyClosedCount: {
           $sum: { $cond: [{ $eq: ['$limitSwitch.restingState', 'FULLY_CLOSED'] }, 1, 0] }
+        },
+        fullyOpenCount: {
+          $sum: { $cond: [{ $eq: ['$limitSwitch.restingState', 'FULLY_OPEN'] }, 1, 0] }
+        },
+        ajarCount: {
+          $sum: { $cond: [{ $eq: ['$limitSwitch.restingState', 'AJAR'] }, 1, 0] }
         },
         totalSamples: { $sum: 1 },
         // RFID stats
@@ -232,7 +238,9 @@ async function getSensorHealthAnalytics(gateId = 'gate_main_01') {
   const total = photocellStats.totalSamples || 1;
   const avgOptical = parseFloat((photocellStats.avgOpticalSignal || 95.0).toFixed(1));
   const dirtyCount = photocellStats.dirtyLensCount || 0;
-  const restingPercent = parseFloat(((photocellStats.fullyClosedCount || 0) / total * 100).toFixed(1));
+  const closedPercent = parseFloat(((photocellStats.fullyClosedCount || 0) / total * 100).toFixed(1));
+  const openPercent = parseFloat(((photocellStats.fullyOpenCount || 0) / total * 100).toFixed(1));
+  const totalRestingPercent = parseFloat((((photocellStats.fullyClosedCount || 0) + (photocellStats.fullyOpenCount || 0)) / total * 100).toFixed(1));
 
   return {
     gateId,
@@ -249,11 +257,16 @@ async function getSensorHealthAnalytics(gateId = 'gate_main_01') {
         : 'Optical signal degradation detected. Clean lenses and check alignment brackets.'
     },
     limitSwitch: {
-      restingStateConfirmationRate: `${restingPercent}%`,
+      restingClosedRate: `${closedPercent}%`,
+      restingOpenRate: `${openPercent}%`,
+      restingStateConfirmationRate: `${totalRestingPercent}%`,
+      fullyClosedSamples: photocellStats.fullyClosedCount || 0,
+      fullyOpenSamples: photocellStats.fullyOpenCount || 0,
+      ajarTransitSamples: photocellStats.ajarCount || 0,
       avgStandbyPowerWatts: parseFloat((photocellStats.avgStandbyPower || 2.1).toFixed(2)),
       avgAmbientMotorTemperatureC: parseFloat((photocellStats.avgAmbientTemp || 21.0).toFixed(1)),
-      status: 'VERIFIED_FULLY_CLOSED',
-      diagnosis: 'Mechanical limit switch consistently confirms resting closure with normal 2.1W standby draw.'
+      status: (photocellStats.fullyOpenCount > 0) ? 'VERIFIED_DUAL_BOUNDARY' : 'VERIFIED_FULLY_CLOSED',
+      diagnosis: `Mechanical limit switch verifies physical closure (${closedPercent}%) and full open boundary (${openPercent}%) with normal quiescent standby power.`
     },
     rfidReader: {
       avgBackgroundNoiseDbm: parseFloat((photocellStats.avgNoiseDbm || -82.5).toFixed(1)),

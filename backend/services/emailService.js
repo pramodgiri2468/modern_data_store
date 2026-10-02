@@ -63,160 +63,23 @@ async function getTransporter() {
 }
 
 /**
- * Send an email notification when an authorized entry is granted.
- * @param {Object} options
- * @param {Object} options.policy - The matched AccessPolicy document
- * @param {string} options.homeId - The home ID (e.g., home_uk_01)
- * @param {string} options.gateId - The gate ID (e.g., gate_main_01)
- * @param {string} options.credentialType - e.g., 'RFID_TAG', 'LICENSE_PLATE', 'PIN_CODE'
- * @param {string} options.identifier - The credential identifier
- * @param {string} options.method - e.g., 'RFID_SCAN', 'ALPR_SCAN', 'MANUAL_PIN'
- * @param {Date} [options.timestamp] - Entry timestamp
+ * Routine authorized entries do not send emails.
+ * Email dispatch is strictly and exclusively restricted to UNAUTHORIZED access alerts and security intrusions.
  */
-async function sendAuthorizedEntryNotification({ policy, homeId = 'home_uk_01', gateId = 'gate_main_01', credentialType, identifier, method, timestamp = new Date() }) {
-  try {
-    const holderName = policy?.holderName || 'Authorized User';
-    const userRole = policy?.userRole || 'RESIDENT';
-    const specificMail = policy?.notificationEmail?.trim();
-    const defaultAlertMail = process.env.DEFAULT_ALERT_EMAIL || 'pg016742@gmail.com';
-
-    // Target the particular email of the credential holder, plus default homeowner alert mail if different
-    const recipients = [];
-    if (specificMail) {
-      recipients.push(specificMail);
-    }
-    if (defaultAlertMail && !recipients.includes(defaultAlertMail)) {
-      recipients.push(defaultAlertMail);
-    }
-
-    if (recipients.length === 0) {
-      recipients.push('pg016742@gmail.com');
-    }
-
-    const toAddresses = recipients.join(', ');
-    const fromAddress = process.env.EMAIL_FROM || '"IoThings Gate Security" <notifications@iothings.co.uk>';
-    const formattedTime = new Date(timestamp).toLocaleString('en-GB', {
-      timeZone: 'Europe/London',
-      dateStyle: 'full',
-      timeStyle: 'medium'
-    });
-
-    const subject = `🚪 [IoThings Gate Alert] Authorized Entry Granted: ${holderName} (${credentialType || policy?.credentialType || 'Credential'})`;
-
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #334155;">
-        <div style="background: linear-gradient(135deg, #0ea5e9, #6366f1); padding: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 20px; color: #ffffff;">IoThings Smart Main Gate Security</h1>
-          <p style="margin: 5px 0 0 0; font-size: 13px; color: #e2e8f0;">UK Home Automation & Access Notification System</p>
-        </div>
-        
-        <div style="padding: 24px;">
-          <div style="background: #1e293b; border-left: 4px solid #10b981; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-            <strong style="color: #34d399; font-size: 16px;">✔ ACCESS GRANTED & GATE OPENED</strong>
-            <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">
-              An authorized entry event was registered and the automated gate has been unlocked.
-            </p>
-          </div>
-
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Credential Holder:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #f8fafc; font-weight: bold;">${holderName}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>User Role:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #38bdf8;">${userRole}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Credential Type:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #f8fafc;">${credentialType || policy?.credentialType || 'N/A'}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Identifier:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #a78bfa; font-family: monospace;">${identifier || policy?.identifier || 'N/A'}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Verification Method:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #f8fafc;">${method || 'AUTOMATED_SENSOR_SCAN'}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #334155;">
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Gate Location:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #f8fafc;">${gateId} (${homeId})</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px 0; color: #94a3b8;"><strong>Timestamp:</strong></td>
-              <td style="padding: 10px 0; text-align: right; color: #f8fafc;">${formattedTime}</td>
-            </tr>
-          </table>
-
-          <div style="background: #1e293b; padding: 12px; border-radius: 6px; font-size: 12px; color: #64748b; text-align: center;">
-            This automated dispatch complies with UK Data Protection and GDPR access audit regulations.
-          </div>
-        </div>
-      </div>
-    `;
-
-    const textBody = `
-[IoThings Smart Main Gate Security Alert]
-ACCESS GRANTED & GATE OPENED
-
-Holder: ${holderName} (${userRole})
-Credential: ${credentialType || policy?.credentialType} [${identifier || policy?.identifier}]
-Verification Method: ${method}
-Gate: ${gateId} (${homeId})
-Time: ${formattedTime}
-Notification sent to: ${toAddresses}
-    `.trim();
-
-    const mailOptions = {
-      from: fromAddress,
-      to: toAddresses,
-      subject,
-      text: textBody,
-      html: htmlBody
-    };
-
-    const client = await getTransporter();
-    const info = await client.sendMail(mailOptions);
-    let previewUrl = null;
-    if (isEthereal) {
-      previewUrl = nodemailer.getTestMessageUrl(info);
-    }
-
-    const notificationRecord = {
-      id: `NOTIF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type: 'AUTHORIZED_ENTRY',
-      timestamp: new Date(),
-      recipient: toAddresses,
-      holderName,
-      userRole,
-      credentialType: credentialType || policy?.credentialType,
-      identifier: identifier || policy?.identifier,
-      subject,
-      status: 'SENT',
-      previewUrl,
-      messageId: info.messageId || 'local-dispatch'
-    };
-
-    // Store in audit cache
-    recentNotifications.unshift(notificationRecord);
-    if (recentNotifications.length > MAX_HISTORY) {
-      recentNotifications.pop();
-    }
-
-    console.log(`\n📧 [EMAIL NOTIFICATION DISPATCHED]`);
-    console.log(`  ├─ To:      ${toAddresses}`);
-    console.log(`  ├─ Subject: ${subject}`);
-    if (previewUrl) {
-      console.log(`  ├─ 🔗 View Delivered Email: ${previewUrl}`);
-    }
-    console.log(`  └─ Details: Holder "${holderName}" (${userRole}) via ${method} at ${formattedTime}\n`);
-
-    return notificationRecord;
-  } catch (error) {
-    console.error('[Email Service] Failed to send entry notification:', error);
-    return null;
-  }
+async function sendAuthorizedEntryNotification({
+  policy,
+  homeId = 'home_uk_01',
+  gateId = 'gate_main_01',
+  credentialType,
+  identifier,
+  method,
+  timestamp = new Date()
+} = {}) {
+  // Suppress email dispatch: only unauthorized entry attempts trigger emails.
+  const holderName = policy?.holderName || 'Authorized User';
+  const userRole = policy?.userRole || 'RESIDENT';
+  console.log(`[Email Service] Authorized access granted for "${holderName}" (${userRole}) — quiet entry (emails are sent ONLY for unauthorized entry).`);
+  return null;
 }
 
 /**

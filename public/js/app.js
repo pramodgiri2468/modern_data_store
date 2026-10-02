@@ -830,13 +830,65 @@ function setupEventListeners() {
   const btnAlprDenied = document.getElementById('sim-alpr-denied');
   if (btnAlprDenied) btnAlprDenied.addEventListener('click', () => triggerSimulation('UNAUTHORIZED_ALPR'));
   document.getElementById('sim-obstacle').addEventListener('click', () => triggerSimulation('SAFETY_OBSTACLE'));
+  const btnSimCycle = document.getElementById('sim-gate-cycle');
+  if (btnSimCycle) btnSimCycle.addEventListener('click', () => triggerSimulation('GATE_OPEN_CYCLE'));
+  const btnSimHold = document.getElementById('sim-hold-open');
+  if (btnSimHold) btnSimHold.addEventListener('click', () => triggerSimulation('GATE_HOLD_OPEN'));
   document.getElementById('sim-tamper').addEventListener('click', () => triggerSimulation('TAMPER_ALARM'));
 
-  // 5-Minute Continuous Telemetry Trigger
+  // Continuous Telemetry Triggers (Both FULLY_CLOSED and FULLY_OPEN)
+  const btnGenClosed = document.getElementById('btn-gen-closed-telemetry');
+  if (btnGenClosed) {
+    btnGenClosed.addEventListener('click', async () => {
+      showSimFeedback('Generating instantaneous FULLY_CLOSED telemetry sample...');
+      try {
+        const res = await fetch('/api/sensors/generate-telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ restingState: 'FULLY_CLOSED', status: 'IDLE_CLOSED' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showSimFeedback('✓ FULLY_CLOSED telemetry sample generated and persisted to MongoDB!');
+          fetchGateStatus();
+          fetchEvents();
+        } else {
+          showSimFeedback(`✗ Error: ${json.error}`);
+        }
+      } catch (err) {
+        showSimFeedback(`✗ Error: ${err.message}`);
+      }
+    });
+  }
+
+  const btnGenOpen = document.getElementById('btn-gen-open-telemetry');
+  if (btnGenOpen) {
+    btnGenOpen.addEventListener('click', async () => {
+      showSimFeedback('Generating instantaneous FULLY_OPEN telemetry sample...');
+      try {
+        const res = await fetch('/api/sensors/generate-telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ restingState: 'FULLY_OPEN', status: 'OPEN' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showSimFeedback('✓ FULLY_OPEN telemetry sample generated and persisted to MongoDB!');
+          fetchGateStatus();
+          fetchEvents();
+        } else {
+          showSimFeedback(`✗ Error: ${json.error}`);
+        }
+      } catch (err) {
+        showSimFeedback(`✗ Error: ${err.message}`);
+      }
+    });
+  }
+
   const btnGen5Min = document.getElementById('btn-gen-5min-telemetry');
   if (btnGen5Min) {
     btnGen5Min.addEventListener('click', async () => {
-      showSimFeedback('Generating instantaneous 5-minute interval telemetry point...');
+      showSimFeedback('Generating instantaneous interval telemetry point...');
       try {
         const res = await fetch('/api/sensors/generate-telemetry', {
           method: 'POST',
@@ -845,7 +897,7 @@ function setupEventListeners() {
         });
         const json = await res.json();
         if (json.success) {
-          showSimFeedback('✓ 5-Minute telemetry point generated and persisted to MongoDB!');
+          showSimFeedback(`✓ Telemetry point (${json.restingState || 'Sample'}) generated and persisted to MongoDB!`);
           fetchGateStatus();
           fetchEvents();
         } else {

@@ -5,6 +5,10 @@
  * Simulates an unauthorized sensor detection event (unauthorized person, unregistered RFID card, or intruder vehicle).
  * Verifies that the gate remains securely LOCKED, persists the audit event to MongoDB,
  * publishes the event across the embedded MQTT broker, and dispatches an urgent security alert email to pg016742@gmail.com.
+ * 
+ * Resilient Operation:
+ * - If backend server is running on port 3000: sends via HTTP REST API.
+ * - If backend server is NOT running: connects directly to MongoDB and dispatches email in-process.
  */
 
 require('dotenv').config();
@@ -30,12 +34,14 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-const payload = JSON.stringify({
+const payloadObj = {
   type: eventType,
   identifier: identifier || (eventType === 'RFID' ? 'UNKNOWN-CLONE-99' : (eventType === 'ALPR' ? 'UNKNOWN-INTRUDER-99' : 'UNAUTHORIZED-PERSON-01')),
   personName: 'Unauthorized Person / Intruder',
   reason: reason || (eventType === 'PERSON' ? 'Unauthorized person entered property perimeter while gate is locked' : 'Unregistered credential presented at main gate')
-});
+};
+
+const payload = JSON.stringify(payloadObj);
 
 const req = http.request({
   hostname: '127.0.0.1',
@@ -52,37 +58,56 @@ const req = http.request({
   res.on('end', () => {
     try {
       const data = JSON.parse(body);
-      console.log('========================================================================');
-      console.log('🚨 [IoThings] UNAUTHORIZED SENSOR DATA & SECURITY EMAIL ALERT INITIATED');
-      console.log('========================================================================');
-      console.log(`✓ Status Code:      ${res.statusCode}`);
-      console.log(`✓ Message:          ${data.message}`);
-      if (data.data) {
-        console.log(`✓ Event ID:         ${data.data.eventId}`);
-        console.log(`✓ Event Type:       ${data.data.eventType} (${data.data.severity})`);
-        console.log(`✓ Identifier:       ${data.data.identifier}`);
-        console.log(`✓ Gate Status:      ${data.data.gateStatus} (Lock Engaged: ${data.data.lockEngaged})`);
-        console.log(`✓ Denial Reason:    ${data.data.reason}`);
-        if (data.data.emailNotification) {
-          console.log(`✓ Security Email:   DISPATCHED TO ${data.data.emailNotification.recipient}`);
-          console.log(`✓ Email Subject:    ${data.data.emailNotification.subject}`);
-          console.log(`✓ Alert Record ID:  ${data.data.emailNotification.id}`);
-        }
-      }
-      console.log('========================================================================');
-      console.log('🔒 PERIMETER DEFENSE ACTIVE: Gate held securely locked.');
-      console.log('📧 Alert dispatched to pg016742@gmail.com.');
-      console.log('========================================================================\n');
+      printSummary(res.statusCode, data.message, data.data);
     } catch (e) {
       console.log('Response:', body);
     }
   });
 });
 
-req.on('error', (err) => {
-  console.error(`\n❌ Failed to connect to server on port ${PORT}: ${err.message}`);
-  console.error('Make sure the server is running with: npm start\n');
+req.on('error', async (err) => {
+  if (err.code === 'ECONNREFUSED') {
+    console.log(`[Info] Core server not running on port ${PORT}. Executing in standalone direct database mode...`);
+    try {
+      const { connectDB } = require('../backend/config/database');
+      await connectDB();
+      const { emitUnauthorizedSensorEvent } = require('../backend/services/telemetryEmitter');
+      const result = await emitUnauthorizedSensorEvent({
+        type: eventType,
+        identifier: payloadObj.identifier,
+        reason: payloadObj.reason
+      });
+      printSummary(201, 'Unauthorized sensor data recorded and security alert email dispatched to pg016742@gmail.com', result);
+      setTimeout(() => process.exit(0), 1000);
+    } catch (dbErr) {
+      console.error(`\n❌ Failed to execute simulation: ${dbErr.message}`);
+      console.error('Tip: To run via REST API, start the server first in another terminal with: npm start\n');
+      process.exit(1);
+    }
+  } else {
+    console.error(`\n❌ Request error: ${err.message}\n`);
+    process.exit(1);
+  }
 });
+
+function printSummary(statusCode, message, data) {
+  console.log(`\nUnauthorized sensor event recorded (HTTP ${statusCode})`);
+  console.log(`Message:     ${message}`);
+  if (data) {
+    console.log(`Event ID:    ${data.eventId}`);
+    console.log(`Type:        ${data.eventType}`);
+    console.log(`Identifier:  ${data.identifier}`);
+    console.log(`Gate Status: ${data.gateStatus || 'LOCKED'}`);
+    console.log(`Reason:      ${data.reason}`);
+    if (data.emailNotification) {
+      console.log(`Alert Email: ${data.emailNotification.recipient}`);
+      if (data.emailNotification.previewUrl) {
+        console.log(`Preview:     ${data.emailNotification.previewUrl}`);
+      }
+    }
+  }
+  console.log('');
+}
 
 req.write(payload);
 req.end();

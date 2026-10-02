@@ -39,9 +39,7 @@ function makeRequest(method, path, body = null) {
 }
 
 async function runTests() {
-  console.log('====================================================');
-  console.log(' RUNNING AUTOMATED API & ENDPOINT INTEGRATION TESTS');
-  console.log('====================================================');
+  console.log('Running API integration tests...\n');
 
   try {
     // 1. Health check
@@ -75,12 +73,22 @@ async function runTests() {
     assert(eventsRes.body.data.length > 0);
     console.log(`✓ PASS: GET /api/sensors/events returned ${eventsRes.body.data.length} records (Total: ${eventsRes.body.total})`);
 
-    // 5b. Continuous 5-Minute Telemetry Generation
-    const genTelemRes = await makeRequest('POST', '/api/sensors/generate-telemetry', {});
-    assert.strictEqual(genTelemRes.status, 201);
-    assert.strictEqual(genTelemRes.body.success, true);
-    assert.ok(genTelemRes.body.interval);
-    console.log(`✓ PASS: POST /api/sensors/generate-telemetry successfully generated telemetry (${genTelemRes.body.interval})`);
+    // 5b. Continuous Telemetry Generation (Both FULLY_CLOSED and FULLY_OPEN)
+    const genClosedRes = await makeRequest('POST', '/api/sensors/generate-telemetry', { restingState: 'FULLY_CLOSED', status: 'IDLE_CLOSED' });
+    assert.strictEqual(genClosedRes.status, 201);
+    assert.strictEqual(genClosedRes.body.success, true);
+    assert.strictEqual(genClosedRes.body.restingState, 'FULLY_CLOSED');
+    assert.strictEqual(genClosedRes.body.data.limitSwitch.restingState, 'FULLY_CLOSED');
+    assert.strictEqual(genClosedRes.body.data.metrics.reedSwitchState, 'CLOSED');
+    console.log(`✓ PASS: POST /api/sensors/generate-telemetry successfully generated FULLY_CLOSED telemetry`);
+
+    const genOpenRes = await makeRequest('POST', '/api/sensors/generate-telemetry', { restingState: 'FULLY_OPEN', status: 'OPEN' });
+    assert.strictEqual(genOpenRes.status, 201);
+    assert.strictEqual(genOpenRes.body.success, true);
+    assert.strictEqual(genOpenRes.body.restingState, 'FULLY_OPEN');
+    assert.strictEqual(genOpenRes.body.data.limitSwitch.restingState, 'FULLY_OPEN');
+    assert.strictEqual(genOpenRes.body.data.metrics.reedSwitchState, 'OPEN');
+    console.log(`✓ PASS: POST /api/sensors/generate-telemetry successfully generated FULLY_OPEN telemetry`);
 
     // 6. Policy CRUD: CREATE
     const newPolicy = {
@@ -141,7 +149,7 @@ async function runTests() {
     assert.ok(sensorHealthRes.body.data.rfidReader);
     console.log(`✓ PASS: GET /api/analytics/sensor-health verified 3 core sensors (Photocell: ${sensorHealthRes.body.data.photocell.status}, LimitSwitch: ${sensorHealthRes.body.data.limitSwitch.status}, RFID: ${sensorHealthRes.body.data.rfidReader.heartbeatStatus})`);
 
-    // 8. Authorized Entry Email Notifications
+    // 8. Authorized Entry (Emails Suppressed - Sent ONLY for Unauthorized Alerts)
     const testEmailRes = await makeRequest('POST', '/api/notifications/test', {
       email: 'jane.davies@iothings.co.uk',
       holderName: 'Dr. Jane Davies',
@@ -149,8 +157,9 @@ async function runTests() {
     });
     assert.strictEqual(testEmailRes.status, 200);
     assert.strictEqual(testEmailRes.body.success, true);
+    assert.strictEqual(testEmailRes.body.data.emailDispatched, false);
     assert.ok(testEmailRes.body.data.recipient.includes('jane.davies@iothings.co.uk'));
-    console.log(`✓ PASS: POST /api/notifications/test dispatched email to ${testEmailRes.body.data.recipient}`);
+    console.log(`✓ PASS: POST /api/notifications/test confirmed authorized entry does NOT dispatch email (quiet routine access)`);
 
     // 8b. Unauthorized Security Alert Notification
     const testUnauthRes = await makeRequest('POST', '/api/notifications/test-unauthorized', {
@@ -189,10 +198,7 @@ async function runTests() {
     assert.strictEqual(simPersonRes.body.success, true);
     assert.ok(simPersonRes.body.message.includes('pg016742@gmail.com'));
     console.log(`✓ PASS: POST /api/sensors/simulate (UNAUTHORIZED_PERSON) dispatched perimeter breach email alert`);
-
-    console.log('====================================================');
-    console.log(' ALL TEST SUITES PASSED FLAWLESSLY! (100% SUCCESS)');
-    console.log('====================================================');
+    console.log('\nAll 18 tests passed successfully.');
   } catch (err) {
     console.error('Test failed:', err);
     process.exit(1);
@@ -200,6 +206,7 @@ async function runTests() {
     if (serverProcess) {
       serverProcess.kill('SIGINT');
     }
+    process.exit(0);
   }
 }
 

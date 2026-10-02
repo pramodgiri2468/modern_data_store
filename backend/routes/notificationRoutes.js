@@ -20,24 +20,14 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/notifications/test - Trigger an authorized test email dispatch
+// POST /api/notifications/test - Confirms authorized access (emails suppressed, sent only for unauthorized attempts)
 router.post('/test', async (req, res) => {
   try {
     const { email, holderName = 'Pramod (Resident)', userRole = 'RESIDENT' } = req.body;
     const targetEmail = email || process.env.DEFAULT_ALERT_EMAIL || 'pg016742@gmail.com';
 
-    const testPolicy = {
-      holderName,
-      userRole,
-      credentialType: 'RFID_TAG',
-      identifier: 'RFID-TEST-999',
-      notificationEmail: targetEmail
-    };
-
-    const record = await sendAuthorizedEntryNotification({
-      policy: testPolicy,
-      homeId: 'home_uk_01',
-      gateId: 'gate_main_01',
+    await sendAuthorizedEntryNotification({
+      policy: { holderName, userRole, notificationEmail: targetEmail },
       credentialType: 'RFID_TAG',
       identifier: 'RFID-TEST-999',
       method: 'MANUAL_TEST_TRIGGER',
@@ -46,8 +36,16 @@ router.post('/test', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Authorized test email notification dispatched to: ${targetEmail}`,
-      data: record
+      message: `Authorized access verified for ${holderName}. Emails are strictly reserved for unauthorized intrusion alerts (no email dispatched).`,
+      data: {
+        type: 'AUTHORIZED_ENTRY',
+        status: 'QUIET_ENTRY',
+        emailDispatched: false,
+        recipient: targetEmail,
+        holderName,
+        userRole,
+        policy: 'ONLY_UNAUTHORIZED_ENTRY_SENT_TO_EMAIL'
+      }
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

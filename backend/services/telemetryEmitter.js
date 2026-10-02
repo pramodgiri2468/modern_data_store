@@ -30,40 +30,126 @@ async function emitSensorTelemetry(customDate = new Date()) {
 
   // 3. Realistic driveway clearance (240 - 280cm when clear)
   const isVehiclePassing = Math.random() < 0.04;
-  const obstacleDistanceCm = isVehiclePassing
+  let obstacleDistanceCm = isVehiclePassing
     ? Math.round(35 + Math.random() * 40)
     : Math.round(250 + (Math.random() - 0.5) * 20);
 
-  // 4. Optical Photocell Sensor
-  const beamContinuity = obstacleDistanceCm >= 45;
-  const lensDirtFactor = Math.random();
+  // 4. Optical Photocell Sensor baseline
+  let beamContinuity = obstacleDistanceCm >= 45;
   let opticalSignalStrength = 96.0;
   let photocellHealth = 'HEALTHY';
 
-  if (!beamContinuity) {
-    opticalSignalStrength = parseFloat((12.0 + Math.random() * 15.0).toFixed(1));
-    photocellHealth = 'HEALTHY';
-  } else if (lensDirtFactor < 0.05) {
-    opticalSignalStrength = parseFloat((58.0 + Math.random() * 14.0).toFixed(1));
-    photocellHealth = 'DIRTY_LENS_WARNING';
-  } else {
-    opticalSignalStrength = parseFloat((92.0 + Math.random() * 7.5).toFixed(1));
-    opticalSignalStrength = Math.min(100.0, opticalSignalStrength);
-    photocellHealth = 'HEALTHY';
-  }
+  // 5. Contactless RFID Reader baseline
+  let backgroundNoiseDbm = parseFloat((-83.5 + (Math.random() - 0.5) * 3.0).toFixed(1));
+  let antennaStatus = 'OPTIMAL';
 
   const currentState = mqttHandler.getGateState();
-  const status = currentState.status || 'IDLE_CLOSED';
-  const lockEngaged = currentState.lockEngaged !== undefined ? currentState.lockEngaged : true;
-  const restingState = (status === 'IDLE_CLOSED' || status === 'LOCKED') ? 'FULLY_CLOSED' : (status === 'OPEN' ? 'FULLY_OPEN' : 'AJAR');
-  const standbyPowerWatts = (restingState === 'FULLY_CLOSED') ? 2.1 : 48.0;
+  telemetryCycleCount++;
 
-  // 5. Contactless RFID Reader Sensor
-  const noiseSpike = Math.random() < 0.05;
-  const backgroundNoiseDbm = noiseSpike
-    ? parseFloat((-62.0 + Math.random() * 5.0).toFixed(1))
-    : parseFloat((-83.5 + (Math.random() - 0.5) * 3.0).toFixed(1));
-  const antennaStatus = noiseSpike ? 'DETUNED' : 'OPTIMAL';
+  // Mixed operational profiles across 15-second intervals:
+  // Dynamically produces a rich, realistic mix of sensor data:
+  // FULLY_CLOSED, FULLY_OPEN, and AJAR states, along with varied photocell beam conditions and RFID noise.
+  let status = currentState.status || 'IDLE_CLOSED';
+  let lockEngaged = currentState.lockEngaged !== undefined ? currentState.lockEngaged : true;
+  let reedSwitchState = currentState.reedSwitchState || 'CLOSED';
+  let motorCurrentAmps = 0.0;
+  let restingState = 'FULLY_CLOSED';
+  let standbyPowerWatts = 2.1;
+  let pirMotionDetected = isVehiclePassing || Math.random() < 0.06;
+
+  // Cycle through mixed states every 15 seconds unless manual hold is active
+  const cycleMode = telemetryCycleCount % 6;
+  if (cycleMode === 0) {
+    // 1. Resting Locked (FULLY_CLOSED)
+    status = 'LOCKED';
+    lockEngaged = true;
+    reedSwitchState = 'CLOSED';
+    restingState = 'FULLY_CLOSED';
+    standbyPowerWatts = 2.1;
+    motorCurrentAmps = 0.0;
+    obstacleDistanceCm = 260 + Math.round((Math.random() - 0.5) * 10);
+    pirMotionDetected = false;
+    beamContinuity = true;
+    opticalSignalStrength = 96.5;
+    photocellHealth = 'HEALTHY';
+    antennaStatus = 'OPTIMAL';
+    backgroundNoiseDbm = -83.5;
+  } else if (cycleMode === 1) {
+    // 2. Gate Opening Transit (AJAR)
+    status = 'OPENING';
+    lockEngaged = false;
+    reedSwitchState = 'AJAR';
+    restingState = 'AJAR';
+    standbyPowerWatts = 48.0;
+    motorCurrentAmps = parseFloat((3.7 + Math.random() * 0.4).toFixed(2));
+    obstacleDistanceCm = 240;
+    pirMotionDetected = true;
+    beamContinuity = true;
+    opticalSignalStrength = 94.0;
+    photocellHealth = 'HEALTHY';
+    antennaStatus = 'OPTIMAL';
+    backgroundNoiseDbm = -82.0;
+  } else if (cycleMode === 2) {
+    // 3. Resting Fully Open (FULLY_OPEN - Resident / Delivery Hold)
+    status = 'OPEN';
+    lockEngaged = false;
+    reedSwitchState = 'OPEN';
+    restingState = 'FULLY_OPEN';
+    standbyPowerWatts = 2.3;
+    motorCurrentAmps = 0.0;
+    obstacleDistanceCm = 280;
+    pirMotionDetected = true;
+    beamContinuity = true;
+    opticalSignalStrength = 96.0;
+    photocellHealth = 'HEALTHY';
+    antennaStatus = 'OPTIMAL';
+    backgroundNoiseDbm = -84.0;
+  } else if (cycleMode === 3) {
+    // 4. Fully Open with Vehicle Traversal (FULLY_OPEN, Optical Beam Interrupted)
+    status = 'OPEN';
+    lockEngaged = false;
+    reedSwitchState = 'OPEN';
+    restingState = 'FULLY_OPEN';
+    standbyPowerWatts = 2.3;
+    motorCurrentAmps = 0.0;
+    obstacleDistanceCm = 34; // Vehicle traversing photocell beam
+    pirMotionDetected = true;
+    beamContinuity = false;
+    opticalSignalStrength = 18.0;
+    photocellHealth = 'HEALTHY';
+    antennaStatus = 'OPTIMAL';
+    backgroundNoiseDbm = -81.0;
+  } else if (cycleMode === 4) {
+    // 5. Gate Closing Transit (AJAR)
+    status = 'CLOSING';
+    lockEngaged = false;
+    reedSwitchState = 'AJAR';
+    restingState = 'AJAR';
+    standbyPowerWatts = 48.0;
+    motorCurrentAmps = parseFloat((4.0 + Math.random() * 0.3).toFixed(2));
+    obstacleDistanceCm = 255;
+    pirMotionDetected = false;
+    beamContinuity = true;
+    opticalSignalStrength = 95.0;
+    photocellHealth = 'HEALTHY';
+    antennaStatus = 'OPTIMAL';
+    backgroundNoiseDbm = -83.0;
+  } else if (cycleMode === 5) {
+    // 6. Resting Closed with Sensor Variation (FULLY_CLOSED, Dirty Lens Warning, RFID Noise)
+    status = 'IDLE_CLOSED';
+    lockEngaged = true;
+    reedSwitchState = 'CLOSED';
+    restingState = 'FULLY_CLOSED';
+    standbyPowerWatts = 2.1;
+    motorCurrentAmps = 0.0;
+    obstacleDistanceCm = 265;
+    pirMotionDetected = false;
+    beamContinuity = true;
+    opticalSignalStrength = 64.0; // Dust accumulation on photocell lens
+    photocellHealth = 'DIRTY_LENS_WARNING';
+    antennaStatus = 'DETUNED'; // Transient RF noise spike
+    backgroundNoiseDbm = -62.0;
+  }
 
   const batteryBackupVoltage = parseFloat((12.75 + (Math.random() - 0.5) * 0.15).toFixed(2));
   const tamperVibrationG = parseFloat((0.02 + Math.random() * 0.01).toFixed(3));
@@ -88,9 +174,9 @@ async function emitSensorTelemetry(customDate = new Date()) {
 
   const metrics = {
     obstacleDistanceCm,
-    pirMotionDetected: isVehiclePassing || Math.random() < 0.06,
-    reedSwitchState: currentState.reedSwitchState || 'CLOSED',
-    motorCurrentAmps: currentState.motorCurrentAmps || 0.0,
+    pirMotionDetected,
+    reedSwitchState,
+    motorCurrentAmps,
     motorTemperatureC,
     batteryBackupVoltage,
     ambientLightLux: Math.max(5, lux),
@@ -99,11 +185,15 @@ async function emitSensorTelemetry(customDate = new Date()) {
 
   // 1. Update in-memory state & notify Web UI listeners
   mqttHandler.setGateState({
+    status,
+    lockEngaged,
     photocell,
     limitSwitch,
     rfidReader,
     obstacleDistanceCm,
-    pirMotionDetected: metrics.pirMotionDetected,
+    pirMotionDetected,
+    reedSwitchState,
+    motorCurrentAmps,
     lastUpdated: customDate
   });
 
@@ -127,17 +217,38 @@ async function emitSensorTelemetry(customDate = new Date()) {
     return null;
   }
 
+  // Broadcast to MQTT
+  mqttHandler.publishTelemetry(HOME_ID, {
+    gateId: GATE_ID,
+    homeId: HOME_ID,
+    status,
+    lockEngaged,
+    photocell,
+    limitSwitch,
+    rfidReader,
+    metrics,
+    timestamp: customDate.toISOString()
+  });
+
   // 3. Update device heartbeat
   GateDevice.updateOne({ deviceId: 'DEV-CTRL-01' }, { $set: { lastHeartbeat: customDate } }).catch(() => {});
 
   const timeStr = customDate.toLocaleTimeString();
   const intervalSeconds = (parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000) / 1000;
-  console.log(`[Sensor Telemetry ⏱ ${intervalSeconds}s] [${timeStr}] Photocell: ${photocell.opticalSignalStrength}% (${photocell.healthStatus}) | LimitSwitch: ${limitSwitch.restingState} (${limitSwitch.ambientMotorTemperatureC}°C) | RFID: ${rfidReader.backgroundNoiseDbm}dBm`);
+  console.log(`[Sensor Telemetry ⏱ ${intervalSeconds}s] [${timeStr}] Status: ${status} | LimitSwitch: ${limitSwitch.restingState} (${limitSwitch.standbyPowerWatts}W) | Photocell: ${photocell.opticalSignalStrength}% (${photocell.healthStatus}, Beam: ${beamContinuity ? 'CLEAR' : 'OBSTRUCTED'}) | RFID: ${rfidReader.backgroundNoiseDbm}dBm (${rfidReader.antennaStatus})`);
 
-  // 4. Autonomous periodic unauthorized sensor event emission
-  telemetryCycleCount++;
+  // 4a. Autonomous periodic authorized gate cycle (every 6 cycles = ~90s)
+  // Exercises FULLY_OPEN limit switch resting state and realistic resident movements
+  const autoGateCycles = process.env.AUTO_GATE_CYCLES !== 'false';
+  if (autoGateCycles && telemetryCycleCount % 6 === 0 && currentState.status !== 'OPEN') {
+    const cycleType = (telemetryCycleCount % 12 === 0) ? 'RESIDENT_RFID' : 'RESIDENT_ALPR';
+    console.log(`[Auto Simulator Cycle] Triggering authorized resident entrance (${cycleType}). Opening gate to FULLY_OPEN...`);
+    mqttHandler.publishCommand(HOME_ID, GATE_ID, 'OPEN', `Autonomous Cycle: Authorized Resident (${cycleType})`);
+  }
+
+  // 4b. Autonomous periodic unauthorized sensor event emission (every 8 cycles if configured)
   const unauthCycles = parseInt(process.env.AUTO_UNAUTHORIZED_INTERVAL_CYCLES || '0', 10);
-  if (unauthCycles > 0 && telemetryCycleCount % unauthCycles === 0) {
+  if (unauthCycles > 0 && telemetryCycleCount % (unauthCycles * 2) === unauthCycles) {
     const types = ['PERSON', 'RFID', 'ALPR', 'TAMPER'];
     const selected = types[Math.floor(Math.random() * types.length)];
     emitUnauthorizedSensorEvent({ type: selected }).catch(err => {

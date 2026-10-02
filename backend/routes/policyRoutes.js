@@ -211,18 +211,7 @@ router.post('/verify', async (req, res) => {
       });
     }
 
-    // Trigger email notification if requested or default
-    if (req.body.notify !== false) {
-      sendAuthorizedEntryNotification({
-        policy,
-        homeId: policy.homeId || 'home_uk_01',
-        gateId: 'gate_main_01',
-        credentialType: policy.credentialType,
-        identifier: cleanIdentifier,
-        method: req.body.method || 'API_CREDENTIAL_VERIFY',
-        timestamp: new Date()
-      }).catch(err => console.error('[Policy Verify] Notification error:', err));
-    }
+    // Routine authorized access is granted quietly without email dispatch (emails reserved strictly for unauthorized attempts)
 
     res.json({
       authorized: true,

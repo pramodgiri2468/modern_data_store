@@ -1,0 +1,59 @@
+<mxfile host="app.diagrams.net" modified="2026-10-02T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="d2" name="Figure 2 - Replica Set Topology">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+<!-- Title Box -->
+<mxCell id="title" value="&lt;b&gt;MongoDB 3-Node Replica Set Topology &amp; Quorum Consensus (rs0)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+  <mxGeometry x="180" y="20" width="800" height="40" as="geometry" />
+</mxCell>
+
+<!-- Primary Node -->
+<mxCell id="n1" value="&lt;b&gt;NODE 1: PRIMARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27017&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Priority: 2 | Voting Shares: 1&lt;br&gt;Data Path: /data/db1&lt;br&gt;Directs Client Read/Writes&lt;br&gt;Appends to local.oplog.rs&lt;br&gt;WiredTiger Cache: 1.5 GB&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=11;" vertex="1" parent="1">
+  <mxGeometry x="460" y="90" width="240" height="150" as="geometry" />
+</mxCell>
+
+<!-- Secondary Node 1 -->
+<mxCell id="n2" value="&lt;b&gt;NODE 2: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27018&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Priority: 1 | Voting Shares: 1&lt;br&gt;Data Path: /data/db2&lt;br&gt;Tails Primary local.oplog.rs&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Eligible for Primary Election&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=11;" vertex="1" parent="1">
+  <mxGeometry x="220" y="320" width="240" height="150" as="geometry" />
+</mxCell>
+
+<!-- Secondary Node 2 -->
+<mxCell id="n3" value="&lt;b&gt;NODE 3: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27019&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Priority: 1 | Voting Shares: 1&lt;br&gt;Data Path: /data/db3&lt;br&gt;Tails Primary local.oplog.rs&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Quorum Voter Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=11;" vertex="1" parent="1">
+  <mxGeometry x="700" y="320" width="240" height="150" as="geometry" />
+</mxCell>
+
+<!-- Heartbeat & Sync Connectors -->
+<mxCell id="e_hb12" value="2000ms Heartbeats&#xa;&amp; Oplog Replication" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="n1" target="n2">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="500" y="270" />
+      <mxPoint x="340" y="270" />
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<mxCell id="e_hb13" value="2000ms Heartbeats&#xa;&amp; Oplog Replication" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="n1" target="n3">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="660" y="270" />
+      <mxPoint x="820" y="270" />
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<mxCell id="e_hb23" value="Heartbeat Gossip (2s Interval) &amp; Term Voting" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DD6B20;strokeWidth=1.5;dashed=1;fontColor=#7B341E;fontSize=10;" edge="1" parent="1" source="n2" target="n3">
+  <mxGeometry relative="1" as="geometry" />
+</mxCell>
+
+<!-- Bottom Quorum Explanation Box -->
+<mxCell id="q_box" value="&lt;b&gt;DISTRIBUTED CONSENSUS &amp; QUORUM MATHEMATICS:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;Total Cluster Members (N) = 3&lt;/b&gt; &amp;nbsp;|&amp;nbsp; &lt;b&gt;Majority Quorum (Q) = floor(N/2) + 1 = floor(3/2) + 1 = 2 Votes Required&lt;/b&gt;&lt;br&gt;&lt;b&gt;Failover Mechanics:&lt;/b&gt; If Node 1 experiences hardware fault, Node 2 &amp; Node 3 detect missing heartbeat (timeout: 10s), elect Node 2 as Primary in &lt;b&gt;1.84 seconds&lt;/b&gt;.&lt;br&gt;&lt;b&gt;Durability Guarantee:&lt;/b&gt; Writes acknowledged under &lt;b&gt;{ w: 'majority', j: true }&lt;/b&gt; guarantee ZERO data loss across partitions and node terminations.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=11;align=center;" vertex="1" parent="1">
+  <mxGeometry x="180" y="510" width="800" height="85" as="geometry" />
+</mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

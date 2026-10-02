@@ -194,6 +194,22 @@
             </div>
           </button>
 
+          <button class="btn-sim" id="sim-gate-cycle" style="border-color: rgba(16, 185, 129, 0.4);">
+            <span>🔄</span>
+            <div>
+              <div>Full Gate Open Cycle</div>
+              <small style="opacity: 0.7;">Closed ➔ FULLY_OPEN ➔ Closed</small>
+            </div>
+          </button>
+
+          <button class="btn-sim" id="sim-hold-open" style="border-color: rgba(6, 182, 212, 0.4);">
+            <span>⏸️</span>
+            <div>
+              <div>Hold Gate Opened</div>
+              <small style="opacity: 0.7;">Sets LimitSwitch: FULLY_OPEN</small>
+            </div>
+          </button>
+
           <button class="btn-sim" id="sim-tamper" style="grid-column: span 2; border-color: rgba(244, 63, 94, 0.4);">
             <span>🚨</span>
             <div>
@@ -217,7 +233,13 @@
           <span style="font-size: 0.75rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); padding: 0.25rem 0.65rem; border-radius: 9999px; border: 1px solid rgba(6, 182, 212, 0.3);">
             ⏱ Interval: <strong>15s (Real-Time)</strong>
           </span>
-          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-gen-5min-telemetry">
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;" id="btn-gen-closed-telemetry" title="Generate FULLY_CLOSED Sensor Telemetry">
+            🔒 +Closed Sample
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #34d399;" id="btn-gen-open-telemetry" title="Generate FULLY_OPEN Sensor Telemetry">
+            🔓 +Open Sample
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-gen-5min-telemetry" title="Generate Instant Telemetry Sample">
             ⚡ +1 Sample
           </button>
           <span style="font-size: 0.75rem; color: var(--text-dim);" id="telemetry-refresh-time">Updated: Just now</span>
@@ -420,7 +442,7 @@
     <!-- Live Email Notifications Dispatch Log -->
     <section class="glass-card" aria-label="Email Notification Alerts">
       <div class="card-title">
-        <span><span class="icon">📧</span>Automated Security & Access Email Notification Feed</span>
+        <span><span class="icon">📧</span>Automated Security Alert Email Feed (<code style="color: #f87171;">pg016742@gmail.com</code>)</span>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
           <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-test-chime" title="Test Authorized Access Chime Sound">
             🔔 Ring Access Chime
@@ -428,16 +450,13 @@
           <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" id="btn-test-siren" title="Test Security Siren Ring Audio">
             🚨 Ring Alarm Siren
           </button>
-          <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" id="btn-test-email">
-            ✉ Test Authorized Email
-          </button>
           <button class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" id="btn-test-unauthorized-email">
-            🚨 Test Unauthorized Alert
+            🚨 Send Unauthorized Alert Email
           </button>
         </div>
       </div>
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-        Real-time security notifications dispatched to <code style="color: #38bdf8;">pg016742@gmail.com</code> for both <strong>Authorized Resident Entries</strong> and <strong>Unauthorized Intrusion Attempts</strong>:
+        Security alerts are dispatched to <code style="color: #ef4444;">pg016742@gmail.com</code> <strong>strictly for Unauthorized Access Attempts</strong> (unregistered RFID tags, unknown license plates, perimeter pedestrians, and tamper shocks). Routine authorized household entries do not send emails.
       </p>
       <div class="events-stream" id="notifications-stream-list" style="max-height: 180px;">
         <div style="padding: 0.75rem; color: var(--text-muted); text-align: center;">Waiting for entry email notifications...</div>

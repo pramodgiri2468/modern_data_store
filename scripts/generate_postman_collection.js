@@ -5,7 +5,7 @@ const collection = {
   info: {
     _postman_id: "a72d9b64-59e1-4c12-9c71-f9254b0fa138",
     name: "IoThings Smart Gate Controller API (UK Assessment 2024-25)",
-    description: "Complete, production-grade Postman collection for the IoThings Smart House Main Gate Automation Controller. Covers MongoDB 3-Node Replica Set diagnostics, Physical Gate actuation commands, 3-Core Sensor telemetry & 5-minute sampling, Access Control Policy CRUD, Real-Time Email Notifications (Resident Entry & Intruder Alerts), and Predictive Aggregation Analytics.",
+    description: "Complete, production-grade Postman collection for the IoThings Smart House Main Gate Automation Controller. Covers MongoDB 3-Node Replica Set diagnostics, Physical Gate actuation commands, 3-Core Sensor telemetry & 15-second sampling, Access Control Policy CRUD, Real-Time Security Email Notifications (Exclusively for Unauthorized Access & Intruder Alerts), and Predictive Aggregation Analytics.",
     schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   variable: [
@@ -1065,7 +1065,7 @@ const collection = {
               host: ["{{baseUrl}}"],
               path: ["api", "policies", "verify"]
             },
-            description: "Verifies the credential against MongoDB policies and dispatches an authorized entry notification email."
+            description: "Verifies the credential against MongoDB policies (gate unlocked; routine entry kept quiet without email spam)."
           },
           event: [
             {
@@ -1195,7 +1195,7 @@ const collection = {
           ]
         },
         {
-          name: "POST Trigger Authorized Entry Notification Email",
+          name: "POST Verify Authorized Access (Emails Suppressed - Sent ONLY for Unauthorized Alerts)",
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
@@ -1212,7 +1212,7 @@ const collection = {
               host: ["{{baseUrl}}"],
               path: ["api", "notifications", "test"]
             },
-            description: "Dispatches a clean HTML notification email simulating an authorized family member or resident entering through the gate."
+            description: "Confirms that routine authorized access does not dispatch emails to Gmail, strictly reserving email alerts for unauthorized access attempts."
           },
           event: [
             {
@@ -1222,10 +1222,11 @@ const collection = {
                   "pm.test(\"Status code is 200 OK\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Authorized email dispatched\", function () {",
+                  "pm.test(\"Authorized access verified with emails suppressed for routine traffic\", function () {",
                   "    var json = pm.response.json();",
                   "    pm.expect(json.success).to.be.true;",
                   "    pm.expect(json.data.recipient).to.include(\"pg016742@gmail.com\");",
+                  "    pm.expect(json.data.emailDispatched).to.be.false;",
                   "});"
                 ],
                 type: "text/javascript"

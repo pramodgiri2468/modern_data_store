@@ -237,6 +237,18 @@ router.post('/simulate', async (req, res) => {
         break;
       }
 
+      case 'GATE_HOLD_OPEN': {
+        mqttHandler.publishCommand(homeId, gateId, 'HOLD_OPEN', 'Simulated Permanent Hold Open');
+        resultMsg = 'Simulated HOLD OPEN! Gate held at FULLY_OPEN limit switch boundary (quiescent 2.3W standby).';
+        break;
+      }
+
+      case 'GATE_OPEN_CYCLE': {
+        mqttHandler.publishCommand(homeId, gateId, 'OPEN', 'Simulated Resident Arrival');
+        resultMsg = 'Simulated Gate Open cycle! Gate transitioning to FULLY_OPEN, holding, then auto-closing to FULLY_CLOSED.';
+        break;
+      }
+
       default:
         return res.status(400).json({ success: false, error: 'Unknown simulation action' });
     }
@@ -247,10 +259,16 @@ router.post('/simulate', async (req, res) => {
   }
 });
 
-// POST /api/sensors/generate-telemetry - Generate a continuous 5-minute interval sensor data reading
+// POST /api/sensors/generate-telemetry - Generate a continuous interval sensor data reading (FULLY_CLOSED or FULLY_OPEN)
 router.post('/generate-telemetry', async (req, res) => {
   try {
-    const { homeId = 'home_uk_01', gateId = 'gate_main_01' } = req.body;
+    const { 
+      homeId = 'home_uk_01', 
+      gateId = 'gate_main_01',
+      status: reqStatus,
+      restingState: reqRestingState
+    } = req.body;
+
     const now = new Date();
     const hour = now.getHours();
 
@@ -265,19 +283,52 @@ router.post('/generate-telemetry', async (req, res) => {
     }
 
     const currentState = mqttHandler.getGateState();
-    const obstacleDistanceCm = Math.round(250 + (Math.random() - 0.5) * 20);
+    
+    // Determine effective gate state and limit switch boundary
+    let effectiveStatus = reqStatus || (reqRestingState === 'FULLY_OPEN' ? 'OPEN' : (reqRestingState === 'FULLY_CLOSED' ? 'IDLE_CLOSED' : (currentState.status || 'IDLE_CLOSED')));
+    let effectiveRestingState = reqRestingState || (effectiveStatus === 'OPEN' ? 'FULLY_OPEN' : (effectiveStatus === 'IDLE_CLOSED' || effectiveStatus === 'LOCKED' ? 'FULLY_CLOSED' : 'AJAR'));
+
+    const isOpen = effectiveRestingState === 'FULLY_OPEN';
+    const isClosed = effectiveRestingState === 'FULLY_CLOSED';
+    const standbyPowerWatts = isClosed ? 2.1 : (isOpen ? 2.3 : 48.0);
+    const reedSwitchState = isOpen ? 'OPEN' : (isClosed ? 'CLOSED' : 'AJAR');
+    const motorCurrentAmps = (isOpen || isClosed) ? 0.0 : 3.8;
+    const lockEngaged = isClosed;
+
+    const obstacleDistanceCm = isOpen ? 280 : Math.round(250 + (Math.random() - 0.5) * 20);
     const batteryBackupVoltage = parseFloat((12.75 + (Math.random() - 0.5) * 0.15).toFixed(2));
+
+    const photocell = {
+      healthStatus: 'HEALTHY',
+      opticalSignalStrength: 96.0,
+      beamContinuity: true
+    };
+
+    const limitSwitch = {
+      restingState: effectiveRestingState,
+      ambientMotorTemperatureC: motorTemperatureC,
+      standbyPowerWatts
+    };
+
+    const rfidReader = {
+      operationalHeartbeat: true,
+      antennaStatus: 'OPTIMAL',
+      backgroundNoiseDbm: -82.5
+    };
 
     const telemetryDoc = new GateTelemetry({
       homeId,
       gateId,
-      status: currentState.status || 'IDLE_CLOSED',
-      lockEngaged: currentState.lockEngaged !== undefined ? currentState.lockEngaged : true,
+      status: effectiveStatus,
+      lockEngaged,
+      photocell,
+      limitSwitch,
+      rfidReader,
       metrics: {
         obstacleDistanceCm,
         pirMotionDetected: currentState.pirMotionDetected || Math.random() < 0.05,
-        reedSwitchState: currentState.reedSwitchState || 'CLOSED',
-        motorCurrentAmps: currentState.motorCurrentAmps || 0.0,
+        reedSwitchState,
+        motorCurrentAmps,
         motorTemperatureC,
         batteryBackupVoltage,
         ambientLightLux: Math.max(5, lux),
@@ -288,8 +339,18 @@ router.post('/generate-telemetry', async (req, res) => {
 
     const saved = await telemetryDoc.save();
 
-    // Broadcast over MQTT
-    mqttHandler.publishCommand(homeId, gateId, 'STATUS_CHECK', '5-Minute Interval Telemetry Ping');
+    // Broadcast over MQTT to telemetry topic
+    mqttHandler.publishTelemetry(homeId, {
+      gateId,
+      homeId,
+      status: effectiveStatus,
+      lockEngaged,
+      photocell,
+      limitSwitch,
+      rfidReader,
+      metrics: telemetryDoc.metrics,
+      timestamp: now.toISOString()
+    });
 
     const curIntervalMs = parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000;
     const intervalLabel = curIntervalMs >= 60000 
@@ -299,7 +360,9 @@ router.post('/generate-telemetry', async (req, res) => {
     res.status(201).json({
       success: true,
       interval: intervalLabel,
-      message: `Continuous sensor telemetry point (${intervalLabel}) persisted to MongoDB and dispatched to MQTT`,
+      restingState: effectiveRestingState,
+      gateStatus: effectiveStatus,
+      message: `Continuous sensor telemetry point (${effectiveRestingState}) persisted to MongoDB and dispatched to MQTT`,
       data: saved
     });
   } catch (err) {

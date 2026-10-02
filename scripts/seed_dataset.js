@@ -339,7 +339,36 @@ async function seedDatabase() {
       ambientLightLux = Math.round(10 + Math.random() * 15);
     }
 
-    const isMoving = (i % 72 < 2); // Occasional gate cycle during sampling
+    // Historical 5-minute sampling distribution across 14 days (4,032 points):
+    // ~85% FULLY_CLOSED (resting locked shut)
+    // ~12% FULLY_OPEN (driveway access, resident car departure/arrival, deliveries)
+    // ~3% AJAR (opening or closing transit)
+    let telemStatus = 'IDLE_CLOSED';
+    let restingState = 'FULLY_CLOSED';
+    let reedSwitchState = 'CLOSED';
+    let motorCurrentAmps = 0.0;
+    let standbyPowerWatts = parseFloat((2.1 + (Math.random() - 0.5) * 0.3).toFixed(2));
+    let lockEngaged = true;
+
+    // Simulate daytime openings (between 7am and 21pm)
+    const isDay = hour >= 7 && hour <= 21;
+    if (isDay && (i % 22 === 0 || i % 23 === 0)) {
+      telemStatus = 'OPEN';
+      restingState = 'FULLY_OPEN';
+      reedSwitchState = 'OPEN';
+      motorCurrentAmps = 0.0;
+      standbyPowerWatts = parseFloat((2.3 + (Math.random() - 0.5) * 0.2).toFixed(2));
+      lockEngaged = false;
+    } else if (i % 72 < 2) {
+      telemStatus = (i % 72 === 0) ? 'OPENING' : 'CLOSING';
+      restingState = 'AJAR';
+      reedSwitchState = 'AJAR';
+      motorCurrentAmps = parseFloat((3.8 + Math.random() * 0.6).toFixed(2));
+      standbyPowerWatts = parseFloat((46.0 + Math.random() * 6.0).toFixed(1));
+      lockEngaged = false;
+    }
+
+    const isMoving = (restingState === 'AJAR');
     const beamContinuity = !isMoving && Math.random() > 0.01;
 
     // 1. Photocell metrics
@@ -357,11 +386,7 @@ async function seedDatabase() {
       photocellHealth = 'HEALTHY';
     }
 
-    // 2. Limit Switch metrics
-    const restingState = isMoving ? 'AJAR' : 'FULLY_CLOSED';
-    const standbyPowerWatts = isMoving 
-      ? parseFloat((46.0 + Math.random() * 6.0).toFixed(1)) 
-      : parseFloat((2.1 + (Math.random() - 0.5) * 0.3).toFixed(2));
+    // 2. Limit Switch metrics (computed above in restingState & standbyPowerWatts)
 
     // 3. RFID Reader metrics
     const noiseSpike = (i % 150 === 0);
@@ -373,7 +398,7 @@ async function seedDatabase() {
     telemetryPoints.push({
       homeId: 'home_uk_01',
       gateId: 'gate_main_01',
-      status: isMoving ? 'OPENING' : 'IDLE_CLOSED',
+      status: telemStatus,
       photocell: {
         healthStatus: photocellHealth,
         opticalSignalStrength,
@@ -392,14 +417,14 @@ async function seedDatabase() {
       metrics: {
         obstacleDistanceCm: isMoving ? Math.round(45 + Math.random() * 30) : Math.round(250 + (Math.random() - 0.5) * 20),
         pirMotionDetected: isMoving || Math.random() < 0.06,
-        reedSwitchState: isMoving ? 'AJAR' : 'CLOSED',
-        motorCurrentAmps: isMoving ? parseFloat((3.6 + Math.random() * 0.5).toFixed(2)) : 0.0,
+        reedSwitchState,
+        motorCurrentAmps,
         motorTemperatureC,
         batteryBackupVoltage: parseFloat((12.75 + (Math.random() - 0.5) * 0.15).toFixed(2)),
         ambientLightLux: Math.max(5, ambientLightLux),
         tamperVibrationG: 0.02
       },
-      lockEngaged: !isMoving,
+      lockEngaged,
       timestamp: time
     });
   }

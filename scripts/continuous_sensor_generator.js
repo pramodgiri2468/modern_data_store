@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * IoThings Continuous Sensor Data Generator
- * Generates continuous gate telemetry at 5-minute intervals (300,000 ms).
+ * Generates continuous gate telemetry at 15-second dynamic intervals (15,000 ms).
  * Persists records to MongoDB 3-Node Replica Set and publishes over MQTT.
  */
 
@@ -24,7 +24,7 @@ let mqttClient = null;
 
 function connectMQTT() {
   mqttClient = mqtt.connect(MQTT_BROKER_URL, {
-    clientId: `sensor_5min_generator_${Math.random().toString(16).slice(2, 8)}`,
+    clientId: `sensor_telemetry_generator_${Math.random().toString(16).slice(2, 8)}`,
     reconnectPeriod: 5000
   });
 
@@ -61,12 +61,40 @@ function calculateEnvironmentalMetrics(date = new Date()) {
   // PIR motion trigger
   const pirMotionDetected = isVehiclePassing || (Math.random() < 0.08);
 
-  // Motor state (usually IDLE_CLOSED when at 5-minute sampling points)
-  const isOperating = Math.random() < 0.03;
-  const status = isOperating ? 'OPENING' : 'IDLE_CLOSED';
-  const reedSwitchState = isOperating ? 'AJAR' : 'CLOSED';
-  const motorCurrentAmps = isOperating ? parseFloat((3.6 + Math.random() * 0.6).toFixed(2)) : 0.0;
-  const lockEngaged = !isOperating;
+  // Realistic gate state distribution across continuous sampling intervals:
+  // ~80% IDLE_CLOSED (resting shut) -> FULLY_CLOSED
+  // ~15% OPEN (resting open for car loading / resident arrival / delivery) -> FULLY_OPEN
+  // ~5% OPENING / CLOSING (gate in active motion during sample interval) -> AJAR
+  const rState = Math.random();
+  let status = 'IDLE_CLOSED';
+  let restingState = 'FULLY_CLOSED';
+  let reedSwitchState = 'CLOSED';
+  let motorCurrentAmps = 0.0;
+  let lockEngaged = true;
+  let standbyPowerWatts = parseFloat((1.9 + Math.random() * 0.4).toFixed(2)); // ~2.1W resting
+
+  if (rState < 0.15) {
+    status = 'OPEN';
+    restingState = 'FULLY_OPEN';
+    reedSwitchState = 'OPEN';
+    motorCurrentAmps = 0.0;
+    lockEngaged = false;
+    standbyPowerWatts = parseFloat((2.2 + Math.random() * 0.3).toFixed(2)); // ~2.3W quiescent hold
+  } else if (rState < 0.20) {
+    status = Math.random() > 0.5 ? 'OPENING' : 'CLOSING';
+    restingState = 'AJAR';
+    reedSwitchState = 'AJAR';
+    motorCurrentAmps = parseFloat((3.6 + Math.random() * 0.6).toFixed(2));
+    lockEngaged = false;
+    standbyPowerWatts = parseFloat((45.0 + Math.random() * 8.0).toFixed(1)); // ~48W moving
+  } else {
+    status = 'IDLE_CLOSED';
+    restingState = 'FULLY_CLOSED';
+    reedSwitchState = 'CLOSED';
+    motorCurrentAmps = 0.0;
+    lockEngaged = true;
+    standbyPowerWatts = parseFloat((1.9 + Math.random() * 0.4).toFixed(2)); // ~2.1W resting
+  }
 
   // 1. PHOTOCELL SENSOR METRICS
   const beamContinuity = obstacleDistanceCm >= 45;
@@ -92,13 +120,7 @@ function calculateEnvironmentalMetrics(date = new Date()) {
     healthStatus = 'HEALTHY';
   }
 
-  // 2. LIMIT SWITCH SENSOR METRICS
-  const restingState = (status === 'IDLE_CLOSED' || status === 'LOCKED') 
-    ? 'FULLY_CLOSED' 
-    : (status === 'OPEN' ? 'FULLY_OPEN' : 'AJAR');
-  const standbyPowerWatts = (restingState === 'FULLY_CLOSED') 
-    ? parseFloat((1.9 + Math.random() * 0.4).toFixed(2)) // 1.9W - 2.3W in resting standby
-    : parseFloat((45.0 + Math.random() * 8.0).toFixed(1)); // 45W - 53W while moving
+  // 2. LIMIT SWITCH SENSOR METRICS (Configured with dynamic restingState & standbyPowerWatts)
 
   // 3. RFID READER SENSOR METRICS
   const noiseSpike = Math.random() < 0.06;
@@ -185,7 +207,8 @@ async function generateAndPersistTelemetry(timestamp = new Date()) {
 
   const timeStr = timestamp.toLocaleTimeString();
   const dateStr = timestamp.toISOString().split('T')[0];
-  console.log(`[5-Min Telemetry] [${dateStr} ${timeStr}] Document ID: ${saved._id}`);
+  const intervalSec = INTERVAL_MS / 1000;
+  console.log(`[Sensor Telemetry ⏱ ${intervalSec}s] [${dateStr} ${timeStr}] Document ID: ${saved._id}`);
   console.log(`  ├─ 1. Photocell:   Signal=${data.photocell.opticalSignalStrength}% (${data.photocell.healthStatus}) | Beam=${data.photocell.beamContinuity ? 'CONTINUOUS' : 'BROKEN'}`);
   console.log(`  ├─ 2. Limit Switch: State=${data.limitSwitch.restingState} | Ambient Temp=${data.limitSwitch.ambientMotorTemperatureC}°C | Standby=${data.limitSwitch.standbyPowerWatts}W`);
   console.log(`  └─ 3. RFID Reader:  Heartbeat=${data.rfidReader.operationalHeartbeat ? 'OK' : 'FAIL'} | Antenna=${data.rfidReader.antennaStatus} | Noise Floor=${data.rfidReader.backgroundNoiseDbm} dBm`);
@@ -216,7 +239,7 @@ async function run() {
 
   if (backfillIdx !== -1 && args[backfillIdx + 1]) {
     const days = parseInt(args[backfillIdx + 1], 10) || 7;
-    console.log(`[Backfill Mode] Generating continuous 5-minute intervals for past ${days} days...`);
+    console.log(`[Backfill Mode] Generating continuous telemetry points for past ${days} days...`);
     const totalPoints = days * 24 * 12; // 12 points per hour
     const now = Date.now();
     const records = [];
@@ -235,7 +258,7 @@ async function run() {
     }
 
     await GateTelemetry.insertMany(records);
-    console.log(`✓ Successfully backfilled ${records.length} continuous 5-minute interval telemetry records!`);
+    console.log(`✓ Successfully backfilled ${records.length} continuous interval telemetry records!`);
 
     if (args.includes('--exit')) {
       await mongoose.disconnect();
@@ -244,17 +267,20 @@ async function run() {
     }
   }
 
-  // 1. Generate first 5-minute telemetry point immediately on startup
-  console.log('\nGenerating initial 5-minute interval telemetry sample...');
+  // 1. Generate first telemetry point immediately on startup
+  console.log('\nGenerating initial telemetry sample...');
   await generateAndPersistTelemetry(new Date());
 
-  // 2. Schedule recurring generation every 5 minutes (300,000 ms)
-  console.log(`\nActive scheduler running: Next telemetry sample in ${INTERVAL_MS / 60000} minutes.`);
+  // 2. Schedule recurring generation every 15 seconds (15,000 ms)
+  const nextIntervalMsg = INTERVAL_MS >= 60000 
+    ? `${INTERVAL_MS / 60000} minutes` 
+    : `${INTERVAL_MS / 1000} seconds`;
+  console.log(`\nActive scheduler running: Next telemetry sample in ${nextIntervalMsg}.`);
   setInterval(async () => {
     try {
       await generateAndPersistTelemetry(new Date());
     } catch (err) {
-      console.error('[5-Min Telemetry] Generation error:', err.message);
+      console.error('[Sensor Telemetry] Generation error:', err.message);
     }
   }, INTERVAL_MS);
 }
