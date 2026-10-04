@@ -1,0 +1,113 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_mongo_cluster" name="Figure 1 - MongoDB Sharded Cluster">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;Distributed MongoDB Sharded Cluster Architecture (Scale-Out &amp; High Availability)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="920" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 1: Client Application Tier -->
+        <mxCell id="box_client" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="920" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_client_tier" value="&lt;b&gt;CLIENT APPLICATION TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="85" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="node_app1" value="&lt;b&gt;IoThings Express Gateway #1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Node.js REST / MQTT Listener&lt;br&gt;Mongoose Pool (maxPool: 10)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="220" y="110" width="280" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_app2" value="&lt;b&gt;IoThings Express Gateway #2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Node.js Security &amp; Analytics API&lt;br&gt;Mongoose Pool (maxPool: 10)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660" y="110" width="280" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 2: Stateless Mongos Routers & Config Servers -->
+        <mxCell id="box_router_cfg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="210" width="920" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_router_tier" value="&lt;b&gt;QUERY ROUTING &amp; CLUSTER METADATA TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="215" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Mongos Routers -->
+        <mxCell id="mongos_1" value="&lt;b&gt;mongos Router 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;Port: 27017 (Stateless)&lt;br&gt;Caches Routing Table&lt;br&gt;Query Split &amp; Result Merge&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="170" y="245" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="mongos_2" value="&lt;b&gt;mongos Router 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;Port: 27018 (Stateless)&lt;br&gt;Load-Balanced Traffic&lt;br&gt;Scatter-Gather / Targeted&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="245" width="200" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- Config Server Replica Set (cfgRS) -->
+        <mxCell id="cfg_replica_box" value="&lt;b&gt;Config Server Replica Set (cfgRS)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;3-Node Quorum Consensus | 2s Heartbeats&lt;br&gt;&lt;b&gt;Ports:&lt;/b&gt; 27019, 27020, 27021&lt;br&gt;&lt;b&gt;Catalog:&lt;/b&gt; Chunk Ranges, Routing Tables &amp; Shard Map&lt;br&gt;&lt;b&gt;Durability:&lt;/b&gt; Read/Write Majority WiredTiger&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="670" y="240" width="340" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows: App to Mongos -->
+        <mxCell id="e_app_m1" value="BSON Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.8;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="node_app1" target="mongos_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_app_m2" value="BSON Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.8;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="node_app2" target="mongos_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow: Mongos <-> Config Server -->
+        <mxCell id="e_m_cfg" value="Routing Metadata Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.5;dashed=1;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="mongos_2" target="cfg_replica_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Tier 3: Shard Replica Sets -->
+        <mxCell id="box_shards" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="400" width="920" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_shard_tier" value="&lt;b&gt;HORIZONTAL PERSISTENCE TIER — AUTONOMOUS SHARD REPLICA SETS&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="405" width="450" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Shard 1 -->
+        <mxCell id="shard1_box" value="&lt;b&gt;SHARD 1 (rs-shard1)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [MinKey, &quot;HOME_UK_033&quot;)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27117 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27118, :27119&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Shard 2 -->
+        <mxCell id="shard2_box" value="&lt;b&gt;SHARD 2 (rs-shard2)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [&quot;HOME_UK_033&quot;, &quot;HOME_UK_066&quot;)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27217 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27218, :27219&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="455" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Shard 3 -->
+        <mxCell id="shard3_box" value="&lt;b&gt;SHARD 3 (rs-shard3)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [&quot;HOME_UK_066&quot;, MaxKey)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27317 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27318, :27319&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Routing Connectors: Mongos to Shards -->
+        <mxCell id="e_m1_s1" value="Targeted Route (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_1" target="shard1_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_s2" value="Scatter / Gather" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_1" target="shard2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m2_s3" value="Targeted Route (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_2" target="shard3_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Inter-Shard Balancing -->
+        <mxCell id="e_shard_bal" value="Chunk Migration &amp; Balancing (64 MB Chunks)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#718096;strokeWidth=1.2;dashed=1;fontColor=#4A5568;fontSize=9;" edge="1" parent="1" source="shard1_box" target="shard3_box">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="275" y="610" />
+              <mxPoint x="885" y="610" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Summary Callout Banner -->
+        <mxCell id="summary_banner" value="&lt;b&gt;DISTRIBUTED SHARDING KEY PRINCIPLES:&lt;/b&gt; Sharding Key: &lt;b&gt;{ homeId: 1 }&lt;/b&gt; ensures 100% of telemetry writes and recent status lookups for a given residential gate route directly to a single shard without cross-node network penalty. Mongos query routers provide seamless horizontal scale-out while autonomous 3-node replica sets on every shard ensure automatic failover (&amp;lt; 2s) with zero data loss." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="650" width="920" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

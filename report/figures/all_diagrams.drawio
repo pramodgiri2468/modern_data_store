@@ -1,405 +1,517 @@
-<mxfile host="app.diagrams.net" modified="2026-10-02T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
-  <diagram id="d1" name="Fig 1 - Architecture">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
-      <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<!-- Title Box -->
-<mxCell id="title" value="&lt;b&gt;IoThings Smart Gate Automation — End-to-End System Architecture&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=16;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="20" width="880" height="40" as="geometry" />
-</mxCell>
-
-<!-- Layer 1: Perception Layer -->
-<mxCell id="l1_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="140" y="80" width="880" height="110" as="geometry" />
-</mxCell>
-<mxCell id="l1_lbl" value="&lt;b&gt;LAYER 1: PERCEPTION (GATE HARDWARE SENSORS)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="155" y="85" width="400" height="20" as="geometry" />
-</mxCell>
-
-<mxCell id="s1" value="&lt;b&gt;1. Optical Photocell&lt;/b&gt;&lt;br&gt;Active IR Safety Beam&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;GPIO Pin: D4 | 50ms Debounce&lt;br&gt;Detects Vehicles / Pedestrians&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="170" y="110" width="240" height="65" as="geometry" />
-</mxCell>
-
-<mxCell id="s2" value="&lt;b&gt;2. Mechanical Limit Switch&lt;/b&gt;&lt;br&gt;Roller Lever Contact Microswitch&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;GPIO Pin: D7 | NC Fail-Safe&lt;br&gt;States: CLOSED / OPEN / AJAR&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="460" y="110" width="240" height="65" as="geometry" />
-</mxCell>
-
-<mxCell id="s3" value="&lt;b&gt;3. RFID Badge Reader&lt;/b&gt;&lt;br&gt;13.56 MHz Mifare Classic/DESFire&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Wiegand-26 to UART Decoder&lt;br&gt;Scans Resident / Visitor Badges&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="750" y="110" width="240" height="65" as="geometry" />
-</mxCell>
-
-<!-- Layer 2: Transport Layer -->
-<mxCell id="l2_box" value="&lt;b&gt;LAYER 2: TRANSPORT &amp; INGESTION — Embedded Aedes MQTT Broker&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;Port: 1883 | TCP Keep-Alive: 60s | Hierarchical Topics: iothings/home/{homeId}/gate/#&lt;br&gt;QoS 0 for 15s Continuous Telemetry | QoS 1 for Access Scans &amp; Safety Emergency Reverses&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="140" y="230" width="880" height="60" as="geometry" />
-</mxCell>
-
-<!-- Arrows from L1 to L2 -->
-<mxCell id="e1" value="MQTT Pub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;entryX=0.15;entryY=0;strokeColor=#319795;strokeWidth=2;fontColor=#234E52;" edge="1" parent="1" source="s1" target="l2_box">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-<mxCell id="e2" value="MQTT Pub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;entryX=0.5;entryY=0;strokeColor=#319795;strokeWidth=2;fontColor=#234E52;" edge="1" parent="1" source="s2" target="l2_box">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-<mxCell id="e3" value="MQTT Pub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;entryX=0.85;entryY=0;strokeColor=#319795;strokeWidth=2;fontColor=#234E52;" edge="1" parent="1" source="s3" target="l2_box">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- Layer 3: Application & Logic Layer -->
-<mxCell id="l3_box" value="&lt;b&gt;LAYER 3: APPLICATION &amp; SAFETY CONTROLLER — Node.js Express Engine&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#44337A&quot;&gt;Port: 3000 | Sub-8ms Obstacle Auto-Reverse Logic | Mongoose ODM Connection Pool (poolSize: 10)&lt;br&gt;12 RESTful API Endpoints | Credential Policy Validation | UK GDPR Data Privacy Governance&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="140" y="330" width="880" height="60" as="geometry" />
-</mxCell>
-
-<!-- Arrow L2 to L3 -->
-<mxCell id="e4" value="Internal Event Dispatch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6B46C1;strokeWidth=2;fontColor=#44337A;" edge="1" parent="1" source="l2_box" target="l3_box">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- Layer 4: Persistence Layer -->
-<mxCell id="l4_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="140" y="430" width="560" height="150" as="geometry" />
-</mxCell>
-<mxCell id="l4_lbl" value="&lt;b&gt;LAYER 4: DISTRIBUTED DATA STORE (3-NODE REPLICA SET rs0)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="155" y="435" width="450" height="20" as="geometry" />
-</mxCell>
-
-<mxCell id="db1" value="&lt;b&gt;Node 1: PRIMARY&lt;/b&gt;&lt;br&gt;Port: 27017 (Vote: 1)&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Accepts All Writes&lt;br&gt;w: 'majority', j: true&lt;br&gt;Appends to local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="160" y="460" width="150" height="105" as="geometry" />
-</mxCell>
-
-<mxCell id="db2" value="&lt;b&gt;Node 2: SECONDARY&lt;/b&gt;&lt;br&gt;Port: 27018 (Vote: 1)&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Async Oplog Replication&lt;br&gt;Heartbeat: 2000ms&lt;br&gt;Read Preference Eligible&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="345" y="460" width="150" height="105" as="geometry" />
-</mxCell>
-
-<mxCell id="db3" value="&lt;b&gt;Node 3: SECONDARY&lt;/b&gt;&lt;br&gt;Port: 27019 (Vote: 1)&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Async Oplog Replication&lt;br&gt;Heartbeat: 2000ms&lt;br&gt;Quorum Voter (Q=2)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="530" y="460" width="150" height="105" as="geometry" />
-</mxCell>
-
-<!-- Replication Arrows -->
-<mxCell id="e_rep1" value="Oplog" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;" edge="1" parent="1" source="db1" target="db2">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-<mxCell id="e_rep2" value="Oplog" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;" edge="1" parent="1" source="db2" target="db3">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- Layer 5: Presentation & Security Layer -->
-<mxCell id="l5_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="730" y="430" width="290" height="150" as="geometry" />
-</mxCell>
-<mxCell id="l5_lbl" value="&lt;b&gt;LAYER 5: PRESENTATION &amp; ALERTS&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="745" y="435" width="250" height="20" as="geometry" />
-</mxCell>
-
-<mxCell id="p1" value="&lt;b&gt;Single Page Web UI&lt;/b&gt;&lt;br&gt;Real-Time Telemetry Gauges&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Dynamic Access Policy CRUD&lt;br&gt;Analytics &amp; Security Auditing&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDF2F7;strokeColor=#4A5568;fontColor=#2D3748;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="750" y="460" width="250" height="48" as="geometry" />
-</mxCell>
-
-<mxCell id="p2" value="&lt;b&gt;Security Email Alerts&lt;/b&gt;&lt;br&gt;Automated SMTP Notification Dispatch&lt;br&gt;&lt;font color=&quot;#742A2A&quot;&gt;pg016742@gmail.com on Breach&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#742A2A;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="750" y="518" width="250" height="48" as="geometry" />
-</mxCell>
-
-<!-- Arrows L3 to L4 and L5 -->
-<mxCell id="e_l3_l4" value="Mongoose Connection Pool (w: 'majority')" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;" edge="1" parent="1" source="l3_box" target="db1">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="420" y="410" />
-      <mxPoint x="235" y="410" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-
-<mxCell id="e_l3_l5" value="HTTPS / WebSocket &amp; SMTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C53030;strokeWidth=2;fontColor=#742A2A;" edge="1" parent="1" source="l3_box" target="l5_box">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="740" y="410" />
-      <mxPoint x="875" y="410" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-</root>
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <!-- TAB 1: FIGURE 1 - MONGODB SHARDED CLUSTER ARCHITECTURE -->
+  <diagram id="diag_mongo_cluster" name="Fig 1 - MongoDB Sharded Cluster">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_1" value="&lt;b&gt;Distributed MongoDB Sharded Cluster Architecture (Scale-Out &amp; High Availability)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="920" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="box_client_1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="920" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_client_1" value="&lt;b&gt;CLIENT APPLICATION TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="85" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="node_app1_1" value="&lt;b&gt;IoThings Express Gateway #1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Node.js REST / MQTT Listener&lt;br&gt;Mongoose Pool (maxPool: 10)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="220" y="110" width="280" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_app2_1" value="&lt;b&gt;IoThings Express Gateway #2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Node.js Security &amp; Analytics API&lt;br&gt;Mongoose Pool (maxPool: 10)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660" y="110" width="280" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="box_router_cfg_1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="210" width="920" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_router_1" value="&lt;b&gt;QUERY ROUTING &amp; CLUSTER METADATA TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="215" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="mongos_1_1" value="&lt;b&gt;mongos Router 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;Port: 27017 (Stateless)&lt;br&gt;Caches Routing Table&lt;br&gt;Query Split &amp; Result Merge&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="170" y="245" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="mongos_2_1" value="&lt;b&gt;mongos Router 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;Port: 27018 (Stateless)&lt;br&gt;Load-Balanced Traffic&lt;br&gt;Scatter-Gather / Targeted&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="245" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="cfg_replica_box_1" value="&lt;b&gt;Config Server Replica Set (cfgRS)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;3-Node Quorum Consensus | 2s Heartbeats&lt;br&gt;&lt;b&gt;Ports:&lt;/b&gt; 27019, 27020, 27021&lt;br&gt;&lt;b&gt;Catalog:&lt;/b&gt; Chunk Ranges, Routing Tables &amp; Shard Map&lt;br&gt;&lt;b&gt;Durability:&lt;/b&gt; Read/Write Majority WiredTiger&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="670" y="240" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="e_app_m1_1" value="BSON Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.8;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="node_app1_1" target="mongos_1_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_app_m2_1" value="BSON Driver" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.8;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="node_app2_1" target="mongos_2_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m_cfg_1" value="Routing Metadata Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.5;dashed=1;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="mongos_2_1" target="cfg_replica_box_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="box_shards_1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="400" width="920" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_shard_1" value="&lt;b&gt;HORIZONTAL PERSISTENCE TIER — AUTONOMOUS SHARD REPLICA SETS&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="405" width="450" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="shard1_box_1" value="&lt;b&gt;SHARD 1 (rs-shard1)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [MinKey, &quot;HOME_UK_033&quot;)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27117 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27118, :27119&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="150" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="shard2_box_1" value="&lt;b&gt;SHARD 2 (rs-shard2)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [&quot;HOME_UK_033&quot;, &quot;HOME_UK_066&quot;)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27217 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27218, :27219&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="455" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="shard3_box_1" value="&lt;b&gt;SHARD 3 (rs-shard3)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Chunk Range: [&quot;HOME_UK_066&quot;, MaxKey)&lt;br&gt;&lt;b&gt;Primary:&lt;/b&gt; :27317 (Priority: 2)&lt;br&gt;&lt;b&gt;Secondaries:&lt;/b&gt; :27318, :27319&lt;br&gt;2s Heartbeats | local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="445" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_s1_1" value="Targeted Route (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_1_1" target="shard1_box_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m1_s2_1" value="Scatter / Gather" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_1_1" target="shard2_box_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_m2_s3_1" value="Targeted Route (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="mongos_2_1" target="shard3_box_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="summary_1" value="&lt;b&gt;DISTRIBUTED SHARDING KEY PRINCIPLES:&lt;/b&gt; Sharding Key: &lt;b&gt;{ homeId: 1 }&lt;/b&gt; ensures 100% of telemetry writes and recent status lookups for a given residential gate route directly to a single shard without cross-node network penalty. Mongos query routers provide seamless horizontal scale-out while autonomous 3-node replica sets on every shard ensure automatic failover (&amp;lt; 2s) with zero data loss." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="650" width="920" height="50" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="d2" name="Fig 2 - Replica Set">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
-      <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<!-- Title Box -->
-<mxCell id="title" value="&lt;b&gt;MongoDB 3-Node Replica Set Topology &amp; Quorum Consensus (rs0)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
-  <mxGeometry x="180" y="20" width="800" height="40" as="geometry" />
-</mxCell>
 
-<!-- Primary Node -->
-<mxCell id="n1" value="&lt;b&gt;NODE 1: PRIMARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27017&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Priority: 2 | Voting Shares: 1&lt;br&gt;Data Path: /data/db1&lt;br&gt;Directs Client Read/Writes&lt;br&gt;Appends to local.oplog.rs&lt;br&gt;WiredTiger Cache: 1.5 GB&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="460" y="90" width="240" height="150" as="geometry" />
-</mxCell>
-
-<!-- Secondary Node 1 -->
-<mxCell id="n2" value="&lt;b&gt;NODE 2: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27018&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Priority: 1 | Voting Shares: 1&lt;br&gt;Data Path: /data/db2&lt;br&gt;Tails Primary local.oplog.rs&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Eligible for Primary Election&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="220" y="320" width="240" height="150" as="geometry" />
-</mxCell>
-
-<!-- Secondary Node 2 -->
-<mxCell id="n3" value="&lt;b&gt;NODE 3: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27019&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Priority: 1 | Voting Shares: 1&lt;br&gt;Data Path: /data/db3&lt;br&gt;Tails Primary local.oplog.rs&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Quorum Voter Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="700" y="320" width="240" height="150" as="geometry" />
-</mxCell>
-
-<!-- Heartbeat & Sync Connectors -->
-<mxCell id="e_hb12" value="2000ms Heartbeats&#xa;&amp; Oplog Replication" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="n1" target="n2">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="500" y="270" />
-      <mxPoint x="340" y="270" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-
-<mxCell id="e_hb13" value="2000ms Heartbeats&#xa;&amp; Oplog Replication" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="n1" target="n3">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="660" y="270" />
-      <mxPoint x="820" y="270" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-
-<mxCell id="e_hb23" value="Heartbeat Gossip (2s Interval) &amp; Term Voting" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DD6B20;strokeWidth=1.5;dashed=1;fontColor=#7B341E;fontSize=10;" edge="1" parent="1" source="n2" target="n3">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- Bottom Quorum Explanation Box -->
-<mxCell id="q_box" value="&lt;b&gt;DISTRIBUTED CONSENSUS &amp; QUORUM MATHEMATICS:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;Total Cluster Members (N) = 3&lt;/b&gt; &amp;nbsp;|&amp;nbsp; &lt;b&gt;Majority Quorum (Q) = floor(N/2) + 1 = floor(3/2) + 1 = 2 Votes Required&lt;/b&gt;&lt;br&gt;&lt;b&gt;Failover Mechanics:&lt;/b&gt; If Node 1 experiences hardware fault, Node 2 &amp; Node 3 detect missing heartbeat (timeout: 10s), elect Node 2 as Primary in &lt;b&gt;1.84 seconds&lt;/b&gt;.&lt;br&gt;&lt;b&gt;Durability Guarantee:&lt;/b&gt; Writes acknowledged under &lt;b&gt;{ w: 'majority', j: true }&lt;/b&gt; guarantee ZERO data loss across partitions and node terminations.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=11;align=center;" vertex="1" parent="1">
-  <mxGeometry x="180" y="510" width="800" height="85" as="geometry" />
-</mxCell>
-</root>
+  <!-- TAB 2: FIGURE 2 - CASSANDRA MASTERLESS TOKEN RING -->
+  <diagram id="diag_cassandra_ring" name="Fig 2 - Cassandra Token Ring">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_2" value="&lt;b&gt;Apache Cassandra Masterless Peer-to-Peer Token Ring Network Topology&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ring_guide_2" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;strokeColor=#CBD5E0;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="140" width="460" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="center_hub_2" value="&lt;b&gt;CONSISTENT HASHING RING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;&lt;b&gt;Murmur3Partitioner&lt;/b&gt;&lt;br&gt;Token Range: [-2&lt;sup&gt;63&lt;/sup&gt; to 2&lt;sup&gt;63&lt;/sup&gt; - 1]&lt;br&gt;&lt;hr&gt;&lt;b&gt;Gossip Protocol:&lt;/b&gt; 1s Heartbeat Mesh&lt;br&gt;&lt;b&gt;Failure Detector:&lt;/b&gt; &amp;Phi;-Accrual Metric&lt;br&gt;&lt;b&gt;Replication Factor:&lt;/b&gt; RF = 3 (Multi-Rack)&lt;br&gt;&lt;b&gt;Consistency:&lt;/b&gt; QUORUM = &amp;lfloor;3/2&amp;rfloor; + 1 = 2&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#2B6CB0;strokeWidth=2;fontColor=#1A365D;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="495" y="255" width="230" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="node1_2" value="&lt;b&gt;NODE 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 1A | 10.0.1.11&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x0000 0000&lt;br&gt;Primary Replica A&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="80" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="node2_2" value="&lt;b&gt;NODE 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 1B | 10.0.1.12&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x2AAA AAAA&lt;br&gt;Replica Copy B&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="770" y="200" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="node3_2" value="&lt;b&gt;NODE 3&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 2A | 10.0.1.13&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x5555 5555&lt;br&gt;Replica Copy C&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="770" y="440" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="node4_2" value="&lt;b&gt;NODE 4&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Rack 2B | 10.0.1.14&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x8000 0000&lt;br&gt;Symmetric Peer&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="560" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="node5_2" value="&lt;b&gt;NODE 5&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Rack 3A | 10.0.1.15&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0xAAAA AAAA&lt;br&gt;Symmetric Peer&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="440" width="130" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="node6_2" value="&lt;b&gt;NODE 6 (COORDINATOR)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Rack 3B | 10.0.1.16&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0xD555 5555&lt;br&gt;Receives Client Request&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="200" width="145" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="client_cql_2" value="&lt;b&gt;IoThings Ingestion Client&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;CQL Native Driver&lt;br&gt;Key: &lt;b&gt;homeId = 'HOME_UK_001'&lt;/b&gt;&lt;br&gt;ConsistencyLevel: &lt;b&gt;QUORUM&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="210" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_coord_2" value="CQL Write Request" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=2;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="client_cql_2" target="node6_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_coord_rep1_2" value="Replica Write 1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6_2" target="node1_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_coord_rep2_2" value="Replica Write 2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6_2" target="node2_2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="190" />
+              <mxPoint x="750" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_coord_rep3_2" value="Replica Write 3 (RF=3)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6_2" target="node3_2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="380" />
+              <mxPoint x="740" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="callout_2" value="&lt;b&gt;CASSANDRA MASTERLESS PRINCIPLES:&lt;/b&gt; Symmetrical peer-to-peer ring eliminates master bottlenecks and Single Points of Failure (SPOF). Client can connect to &lt;b&gt;any arbitrary node&lt;/b&gt;, which acts as Coordinator for the transaction. The coordinator uses the Murmur3 hash of the partition key to forward writes to exactly RF=3 replica nodes. Strong consistency is satisfied because &lt;b&gt;R (2) + W (2) &amp;gt; RF (3)&lt;/b&gt;, guaranteeing read-your-writes consistency across network partitions." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="690" width="940" height="55" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="d3" name="Fig 3 - State Machine">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
-      <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<!-- Title Box -->
-<mxCell id="title" value="&lt;b&gt;Smart Residential Gate Finite State Machine &amp; Safety Auto-Reverse Flow&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="20" width="880" height="40" as="geometry" />
-</mxCell>
 
-<!-- State 1: FULLY_CLOSED -->
-<mxCell id="st_closed" value="&lt;b&gt;FULLY_CLOSED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Motor: Idle / Braked&lt;br&gt;Limit Switch: CLOSED&lt;br&gt;Photocell: Beam Clear&lt;br&gt;Gate Angle: 0°&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="160" y="150" width="180" height="90" as="geometry" />
-</mxCell>
-
-<!-- State 2: OPENING -->
-<mxCell id="st_opening" value="&lt;b&gt;OPENING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Motor: Running Forward&lt;br&gt;Current: ~3.8 Amps&lt;br&gt;Limit Switch: AJAR&lt;br&gt;Safety: Active&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="500" y="150" width="180" height="90" as="geometry" />
-</mxCell>
-
-<!-- State 3: FULLY_OPEN -->
-<mxCell id="st_open" value="&lt;b&gt;FULLY_OPEN&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Motor: Idle / Dwell&lt;br&gt;Limit Switch: OPEN&lt;br&gt;Inactivity Timer: 15s&lt;br&gt;Gate Angle: 90°&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="820" y="150" width="180" height="90" as="geometry" />
-</mxCell>
-
-<!-- State 4: CLOSING -->
-<mxCell id="st_closing" value="&lt;b&gt;CLOSING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Motor: Running Reverse&lt;br&gt;Current: ~4.1 Amps&lt;br&gt;Limit Switch: AJAR&lt;br&gt;Photocell: Monitoring&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="500" y="340" width="180" height="90" as="geometry" />
-</mxCell>
-
-<!-- Transitions -->
-<!-- 1. Closed -> Opening -->
-<mxCell id="tr_c_o" value="Valid RFID Badge Scan&#xa;/ Mobile App 'OPEN' Command" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2B6CB0;strokeWidth=2;fontColor=#2C5282;fontSize=10;" edge="1" parent="1" source="st_closed" target="st_opening">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- 2. Opening -> Fully Open -->
-<mxCell id="tr_o_fo" value="Hinge Microswitch:&#xa;Limit = FULLY_OPEN" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="st_opening" target="st_open">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- 3. Fully Open -> Closing -->
-<mxCell id="tr_fo_c" value="15-Second Inactivity Dwell Elapsed&#xa;&amp; Beam Unbroken" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DD6B20;strokeWidth=2;fontColor=#7B341E;fontSize=10;" edge="1" parent="1" source="st_open" target="st_closing">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="910" y="385" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-
-<!-- 4. Closing -> Fully Closed -->
-<mxCell id="tr_c_fc" value="Limit Switch:&#xa;FULLY_CLOSED" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=10;" edge="1" parent="1" source="st_closing" target="st_closed">
-  <mxGeometry relative="1" as="geometry">
-    <Array as="points">
-      <mxPoint x="250" y="385" />
-    </Array>
-  </mxGeometry>
-</mxCell>
-
-<!-- 5. CRITICAL SAFETY REVERSE (Closing -> Opening) -->
-<mxCell id="tr_safety" value="&lt;b&gt;EMERGENCY SAFETY INTERLOCK (BS EN 12453)&lt;/b&gt;&lt;br&gt;&lt;b&gt;Photocell Beam BLOCKED &gt; 50ms&lt;/b&gt;&lt;br&gt;Immediate Motor Reverse Triggered in &lt;b&gt;&amp;lt; 7.4ms&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#C53030;strokeWidth=3.5;fontColor=#C53030;fontSize=10;dashed=0;" edge="1" parent="1" source="st_closing" target="st_opening">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<!-- Safety Standard Callout -->
-<mxCell id="callout" value="&lt;b&gt;SAFETY COMPLIANCE NOTE:&lt;/b&gt; In accordance with &lt;b&gt;BS EN 12453:2017&lt;/b&gt;, closing motorized gates must eliminate crush hazards. The Node.js controller intercepts the MQTT safety topic and bypasses database queueing to issue the reverse command within 7.4ms." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FEB2B2;fontColor=#9B2C2C;fontSize=10;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="470" width="880" height="50" as="geometry" />
-</mxCell>
-</root>
+  <!-- TAB 3: FIGURE 3 - NEO4J CAUSAL CLUSTERING -->
+  <diagram id="diag_neo4j_cluster" name="Fig 3 - Neo4j Causal Clustering">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_3" value="&lt;b&gt;Neo4j High Availability &amp; Causal Clustering Architecture (Core Raft &amp; Scale-Out Read Replicas)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="box_client_3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="bolt_driver_3" value="&lt;b&gt;Neo4j Bolt Smart Routing Driver (bolt+routing://)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Directs Cypher Writes to Core Leader | Load-balances Reads to Followers &amp; Read Replicas&lt;br&gt;Maintains Causal Chaining via Transaction Bookmarks (Read-Your-Own-Writes Guarantee)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="220" y="110" width="740" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="box_core_3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="195" width="940" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_core_3" value="&lt;b&gt;CORE CLUSTER TIER (RAFT PROTOCOL CONSENSUS &amp; ACID GRAPH PERSISTENCE)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="200" width="550" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="core_leader_3" value="&lt;b&gt;CORE LEADER (MASTER)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;&lt;b&gt;Bolt: 7687 | HTTP: 7474&lt;/b&gt;&lt;br&gt;- Exclusive Coordinator for ACID Writes&lt;br&gt;- Appends to neostore.transaction.db&lt;br&gt;- Coordinates Raft Log Majority Quorum&lt;br&gt;- Index-Free Adjacency Graph Engine&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="225" width="260" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="core_f1_3" value="&lt;b&gt;CORE FOLLOWER 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port: 7688 | Raft Voting Member&lt;br&gt;- Replicates Raft Transaction Log&lt;br&gt;- Local Native Graph Store Copy&lt;br&gt;- Eligible for Immediate Leader Election&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="160" y="295" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="core_f2_3" value="&lt;b&gt;CORE FOLLOWER 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port: 7689 | Raft Voting Member&lt;br&gt;- Replicates Raft Transaction Log&lt;br&gt;- Local Native Graph Store Copy&lt;br&gt;- Quorum Participant (Q = 2 of 3)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="295" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="e_write_3" value="Cypher ACID Writes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=2;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="bolt_driver_3" target="core_leader_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_raft1_3" value="Raft Log Replication &amp; Pings" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="core_leader_3" target="core_f1_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_raft2_3" value="Raft Log Replication &amp; Pings" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="core_leader_3" target="core_f2_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="box_rr_3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="480" width="940" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_rr_3" value="&lt;b&gt;READ REPLICA SCALE-OUT TIER (ASYNCHRONOUS TRANSACTION LOG SHIPPING)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="485" width="580" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rr_1_3" value="&lt;b&gt;READ REPLICA 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7690 (Non-Voting)&lt;br&gt;Scales Cypher Read Queries&lt;br&gt;Asynchronous Catch-Up&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="160" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="rr_2_3" value="&lt;b&gt;READ REPLICA 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7691 (Non-Voting)&lt;br&gt;Graph Traversals &amp; Analytics&lt;br&gt;Path Finding Queries&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="rr_3_3" value="&lt;b&gt;READ REPLICA 3&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7692 (Non-Voting)&lt;br&gt;Security Audit Reports&lt;br&gt;External BI Dashboards&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship1_3" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_f1_3" target="rr_1_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship2_3" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_leader_3" target="rr_2_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship3_3" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_f2_3" target="rr_3_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="callout_3" value="&lt;b&gt;NEO4J CAUSAL CLUSTERING PRINCIPLES:&lt;/b&gt; Core cluster members participate in Raft consensus, ensuring graph modifications (nodes, relationships, indexes) satisfy strict ACID durability ($Q = \lfloor 3/2 \rfloor + 1 = 2$). Non-voting Read Replicas scale out arbitrary graph traversals without degrading write throughput. The Bolt driver uses causal bookmark tokens to guarantee read-your-own-writes across asynchronous read replicas." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="685" width="940" height="50" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="d4" name="Fig 4 - Data Model">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
-      <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<!-- Title Box -->
-<mxCell id="title" value="&lt;b&gt;Data Modeling Paradigm: Relational 3NF Schema vs. MongoDB Embedded Document Model&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="20" width="880" height="40" as="geometry" />
-</mxCell>
 
-<!-- Left Container: Relational 3NF -->
-<mxCell id="c_rel" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FEB2B2;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="140" y="80" width="420" height="460" as="geometry" />
-</mxCell>
-<mxCell id="lbl_rel" value="&lt;b&gt;RELATIONAL 3NF SCHEMA (POSTGRESQL)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;Normalized Tables • Multi-Table SQL JOINs • Schema-on-Write&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#9B2C2C;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="150" y="90" width="400" height="30" as="geometry" />
-</mxCell>
-
-<mxCell id="t_homes" value="&lt;b&gt;gate_homes&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; home_id : VARCHAR(32)&lt;br&gt;owner_name : VARCHAR(128)&lt;br&gt;address_postcode : VARCHAR(16)&lt;br&gt;created_at : TIMESTAMP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E53E3E;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
-  <mxGeometry x="160" y="130" width="220" height="80" as="geometry" />
-</mxCell>
-
-<mxCell id="t_devices" value="&lt;b&gt;gate_devices&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; device_id : VARCHAR(32)&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; home_id : VARCHAR(32)&lt;br&gt;device_type : VARCHAR(64)&lt;br&gt;firmware_version : VARCHAR(16)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E53E3E;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
-  <mxGeometry x="160" y="240" width="220" height="80" as="geometry" />
-</mxCell>
-
-<mxCell id="t_telemetry" value="&lt;b&gt;gate_telemetry_events&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; event_id : BIGSERIAL&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; device_id : VARCHAR(32)&lt;br&gt;timestamp : TIMESTAMP&lt;br&gt;photocell_status : VARCHAR(16)&lt;br&gt;limit_switch : VARCHAR(16)&lt;br&gt;motor_current_amps : NUMERIC(4,2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E53E3E;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="1">
-  <mxGeometry x="160" y="350" width="220" height="105" as="geometry" />
-</mxCell>
-
-<mxCell id="e_fk1" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#E53E3E;strokeWidth=1.5;fontColor=#9B2C2C;fontSize=10;" edge="1" parent="1" source="t_homes" target="t_devices">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-<mxCell id="e_fk2" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#E53E3E;strokeWidth=1.5;fontColor=#9B2C2C;fontSize=10;" edge="1" parent="1" source="t_devices" target="t_telemetry">
-  <mxGeometry relative="1" as="geometry" />
-</mxCell>
-
-<mxCell id="rel_drawbacks" value="&lt;b&gt;Bottlenecks:&lt;/b&gt; Requires 3-table SQL JOIN to read state; DDL schema lock on new sensor; multiple random disk seeks." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FED7D7;strokeColor=#FEB2B2;fontColor=#742A2A;fontSize=9;align=center;" vertex="1" parent="1">
-  <mxGeometry x="160" y="470" width="380" height="50" as="geometry" />
-</mxCell>
-
-<!-- Right Container: MongoDB Document -->
-<mxCell id="c_mongo" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#9AE6B4;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="600" y="80" width="420" height="460" as="geometry" />
-</mxCell>
-<mxCell id="lbl_mongo" value="&lt;b&gt;MONGODB EMBEDDED DOCUMENT MODEL&lt;/b&gt;&lt;br&gt;&lt;font color=#22543D&gt;Pre-Aggregated BSON Tree • Single Disk Seek • Zero JOINs&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#22543D;fontSize=11;" vertex="1" parent="1">
-  <mxGeometry x="610" y="90" width="400" height="30" as="geometry" />
-</mxCell>
-
-<mxCell id="doc_json" value="&lt;b&gt;Collection: gate_telemetries&lt;/b&gt;&lt;hr&gt;{&#xa;  &quot;_id&quot;: ObjectId(&quot;6709a1f2b4...&quot;),&#xa;  &quot;homeId&quot;: &quot;HOME_UK_001&quot;,&#xa;  &quot;timestamp&quot;: ISODate(&quot;2026-10-02T08:14:22Z&quot;),&#xa;  &quot;gateState&quot;: &quot;CLOSING&quot;,&#xa;  &quot;sensors&quot;: {&#xa;    &quot;photocell&quot;: { &quot;status&quot;: &quot;CLEAR&quot;, &quot;beamStrength&quot;: 98.4 },&#xa;    &quot;limitSwitch&quot;: { &quot;state&quot;: &quot;AJAR&quot;, &quot;angleDeg&quot;: 34.2 },&#xa;    &quot;rfid&quot;: { &quot;lastScannedBadge&quot;: &quot;TAG_AUTH_8831&quot; }&#xa;  },&#xa;  &quot;metrics&quot;: {&#xa;    &quot;motorCurrentAmps&quot;: 4.12,&#xa;    &quot;batteryVoltage&quot;: 13.8&#xa;  }&#xa;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2F855A;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;fontFamily=Courier New;" vertex="1" parent="1">
-  <mxGeometry x="620" y="130" width="380" height="320" as="geometry" />
-</mxCell>
-
-<mxCell id="mongo_advantages" value="&lt;b&gt;Advantages:&lt;/b&gt; Zero JOINs; fetched in 1 contiguous disk seek (2.75ms); dynamic schema polymorphism; native JSON mapping." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C6F6D5;strokeColor=#9AE6B4;fontColor=#22543D;fontSize=9;align=center;" vertex="1" parent="1">
-  <mxGeometry x="620" y="470" width="380" height="50" as="geometry" />
-</mxCell>
-</root>
+  <!-- TAB 4: FIGURE 4 - DATABASE SCHEMA RELATIONSHIPS -->
+  <diagram id="diag_schema_rel" name="Fig 4 - Database Schema Relationships">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_4" value="&lt;b&gt;IoThings Multi-Collection Relational/Referential Schema &amp; Document Relationships&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="980" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="col_gate_state_4" value="&lt;b&gt;gate_state&lt;/b&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Unique Shard Key]&lt;/font&gt;&lt;br&gt;&lt;b&gt;gateId:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('GATE_01')&lt;/font&gt;&lt;br&gt;&lt;b&gt;currentStatus:&lt;/b&gt; String &lt;font color=&quot;#2F855A&quot;&gt;('CLOSED'|'OPENING'|'OPEN'|'CLOSING')&lt;/font&gt;&lt;br&gt;&lt;b&gt;lastAction:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('EMERGENCY_REVERSE'|'RFID_OPEN')&lt;/font&gt;&lt;br&gt;&lt;b&gt;motorCurrentAmps:&lt;/b&gt; Double &lt;font color=&quot;#718096&quot;&gt;(3.82 A)&lt;/font&gt;&lt;br&gt;&lt;b&gt;batteryVoltage:&lt;/b&gt; Double &lt;font color=&quot;#718096&quot;&gt;(13.6 V)&lt;/font&gt;&lt;br&gt;&lt;b&gt;updatedAt:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Last Heartbeat)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="90" width="280" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="col_telemetry_4" value="&lt;b&gt;telemetry_stream&lt;/b&gt; &lt;font color=&quot;#DD6B20&quot;&gt;&lt;b&gt;(TTL: 30 Days)&lt;/b&gt;&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#DD6B20&quot;&gt;[TTL Expire: 2,592,000s]&lt;/font&gt;&lt;br&gt;&lt;b&gt;photocell:&lt;/b&gt; {&lt;br&gt;&amp;nbsp;&amp;nbsp;status: String &lt;font color=&quot;#718096&quot;&gt;('CLEAR' | 'BLOCKED')&lt;/font&gt;,&lt;br&gt;&amp;nbsp;&amp;nbsp;signalStrength: Double &lt;font color=&quot;#718096&quot;&gt;(98.4%)&lt;/font&gt;&lt;br&gt;}&lt;br&gt;&lt;b&gt;limitSwitch:&lt;/b&gt; {&lt;br&gt;&amp;nbsp;&amp;nbsp;state: String &lt;font color=&quot;#718096&quot;&gt;('CLOSED' | 'OPEN' | 'AJAR')&lt;/font&gt;,&lt;br&gt;&amp;nbsp;&amp;nbsp;contactClosed: Boolean&lt;br&gt;}&lt;br&gt;&lt;b&gt;motor:&lt;/b&gt; { currentDraw: Double, voltage: Double }&lt;br&gt;&lt;font color=&quot;#2F855A&quot;&gt;&lt;b&gt;Compound Index:&lt;/b&gt; { homeId: 1, timestamp: -1 }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="80" width="380" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="col_policies_4" value="&lt;b&gt;access_policies&lt;/b&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;badgeId:&lt;/b&gt; String &lt;font color=&quot;#6B46C1&quot;&gt;[Unique B-Tree Index]&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;holderName:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;(Pseudonymized)&lt;/font&gt;&lt;br&gt;&lt;b&gt;role:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('RESIDENT'|'VISITOR'|'DELIVERY')&lt;/font&gt;&lt;br&gt;&lt;b&gt;allowedDays:&lt;/b&gt; Array&amp;lt;Int&amp;gt; &lt;font color=&quot;#718096&quot;&gt;([1, 2, 3, 4, 5])&lt;/font&gt;&lt;br&gt;&lt;b&gt;timeWindow:&lt;/b&gt; { start: &quot;08:00&quot;, end: &quot;20:00&quot; }&lt;br&gt;&lt;b&gt;enabled:&lt;/b&gt; Boolean &lt;font color=&quot;#718096&quot;&gt;(true)&lt;/font&gt;&lt;br&gt;&lt;b&gt;expiresAt:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Nullable)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="330" width="280" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="col_events_4" value="&lt;b&gt;access_events&lt;/b&gt; &lt;font color=&quot;#718096&quot;&gt;(Security Ingress Audit)&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;badgeId:&lt;/b&gt; String &lt;font color=&quot;#6B46C1&quot;&gt;[FK Index Reference]&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;gateId:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('GATE_01')&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Scanned Time)&lt;/font&gt;&lt;br&gt;&lt;b&gt;accessDecision:&lt;/b&gt; String &lt;font color=&quot;#2F855A&quot;&gt;('GRANTED'&lt;/font&gt; | &lt;font color=&quot;#C53030&quot;&gt;'DENIED')&lt;/font&gt;&lt;br&gt;&lt;b&gt;reasonCode:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('VALID_CREDENTIAL' | 'OUTSIDE_HOURS')&lt;/font&gt;&lt;br&gt;&lt;b&gt;scannedReader:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('RFID_ENTRY_D5')&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#6B46C1&quot;&gt;&lt;b&gt;Compound Index:&lt;/b&gt; { badgeId: 1, timestamp: -1 }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#E53E3E;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="325" width="380" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="col_alerts_4" value="&lt;b&gt;system_alerts&lt;/b&gt; &lt;font color=&quot;#C53030&quot;&gt;&lt;b&gt;(Critical Safety &amp; Intrusion Log)&lt;/b&gt;&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId (PK)&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt; &amp;nbsp;|&amp;nbsp; &lt;b&gt;gateId:&lt;/b&gt; String&lt;br&gt;&lt;b&gt;alertType:&lt;/b&gt; String &lt;font color=&quot;#C53030&quot;&gt;('SAFETY_AUTO_REVERSE' | 'TAMPER_FORCE' | 'REPEATED_DENIED_RFID')&lt;/font&gt;&lt;br&gt;&lt;b&gt;severity:&lt;/b&gt; String &lt;font color=&quot;#C53030&quot;&gt;('CRITICAL' | 'WARNING')&lt;/font&gt;&lt;br&gt;&lt;b&gt;reactionTimeMs:&lt;/b&gt; Double &lt;font color=&quot;#22543D&quot;&gt;(7.4 ms &amp;lt; 8ms BS EN 12453)&lt;/font&gt;&lt;br&gt;&lt;b&gt;notifiedEmail:&lt;/b&gt; Boolean &lt;font color=&quot;#718096&quot;&gt;(Nodemailer SMTP dispatched to pg016742@gmail.com)&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Indexed for Emergency Audit)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="540" width="620" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e_state_telem_4" value="1 : N Parent Ref (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="col_gate_state_4" target="col_telemetry_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pol_event_4" value="1 : N Credential Validation (badgeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=1.8;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="col_policies_4" target="col_events_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_state_pol_4" value="1 : N Home Badges" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="col_gate_state_4" target="col_policies_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_event_alert_4" value="Repeated Denied Scans -> System Alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.5;dashed=1;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="col_events_4" target="col_alerts_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="callout_4" value="&lt;b&gt;DATA GOVERNANCE &amp; UK GDPR COMPLIANCE NOTE:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;1. Storage Limitation (Art. 5(1)(e)):&lt;/b&gt; Automated MongoDB TTL index on &lt;i&gt;telemetry_stream.timestamp&lt;/i&gt; expires records after 30 days (2,592,000s) to prevent unbounded disk growth.&lt;br&gt;&lt;b&gt;2. Data Minimisation (Art. 5(1)(c)):&lt;/b&gt; High-frequency telemetry retains zero personal identity; resident names are restricted to &lt;i&gt;access_policies&lt;/i&gt; with pseudonymized tokens.&lt;br&gt;&lt;b&gt;3. Index Performance:&lt;/b&gt; Compound B-Tree index &lt;i&gt;{ homeId: 1, timestamp: -1 }&lt;/i&gt; reduces recent telemetry query latency from 182.4ms (COLLSCAN) to &lt;b&gt;2.75ms (IXSCAN)&lt;/b&gt;.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="680" width="980" height="60" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="d5" name="Fig 5 - Latency Benchmark">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
-      <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<!-- Title Box -->
-<mxCell id="title" value="&lt;b&gt;Empirical Latency Benchmarks on 3-Node MongoDB Replica Set rs0 (Milliseconds)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A365D;strokeColor=#2A4365;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="20" width="880" height="40" as="geometry" />
-</mxCell>
 
-<!-- Chart Canvas -->
-<mxCell id="chart_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#E2E8F0;" vertex="1" parent="1">
-  <mxGeometry x="140" y="80" width="880" height="400" as="geometry" />
-</mxCell>
+  <!-- TAB 5: FIGURE 5 - SYSTEM PIPELINE ARCHITECTURE -->
+  <diagram id="diag_system_pipeline" name="Fig 5 - End-to-End System Pipeline">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_5" value="&lt;b&gt;IoThings Smart Residential Gate Automation — End-to-End System Pipeline&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="l1_box_5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="l1_lbl_5" value="&lt;b&gt;LAYER 1: PERCEPTION TIER (GATE HARDWARE SENSORS &amp; ACTUATORS)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="85" width="450" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_5" value="&lt;b&gt;1. Active Optical Photocell&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Infrared Safety Beam&lt;br&gt;Pin: &lt;b&gt;GPIO D4&lt;/b&gt; | 50ms Debounce&lt;br&gt;Detects Obstacles / Vehicles&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="145" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s2_5" value="&lt;b&gt;2. Mechanical Limit Switch&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Dual Contact Roller Microswitch&lt;br&gt;Pin: &lt;b&gt;GPIO D7&lt;/b&gt; (NC Fail-Safe)&lt;br&gt;States: CLOSED / OPEN / AJAR&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="380" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_5" value="&lt;b&gt;3. 13.56 MHz RFID Reader&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Mifare Classic / DESFire Fobs&lt;br&gt;Protocol: &lt;b&gt;Wiegand-26&lt;/b&gt; to UART&lt;br&gt;Reads Resident &amp; Visitor Badges&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="615" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s4_5" value="&lt;b&gt;4. DC Actuator &amp; ACS712&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;12V Linear Screw Actuator&lt;br&gt;Current: ~3.8A to 4.2A&lt;br&gt;Stall &amp; Obstacle Detection&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="115" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="l2_box_5" value="&lt;b&gt;LAYER 2: TRANSPORT &amp; INGESTION TIER — Embedded Aedes MQTT Broker&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;&lt;b&gt;Port: 1883&lt;/b&gt; | TCP Keep-Alive: 60s | In-Memory Fast Event Pub/Sub&lt;br&gt;Topics: &lt;i&gt;iothings/home/{id}/gate/telemetry&lt;/i&gt; (QoS 0) &amp;nbsp;|&amp;nbsp; &lt;i&gt;iothings/home/{id}/gate/safety&lt;/i&gt; (QoS 1) &amp;nbsp;|&amp;nbsp; &lt;i&gt;iothings/home/{id}/gate/command&lt;/i&gt; (QoS 1)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="240" width="940" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_5" value="QoS 1 Safety" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.8;fontColor=#C53030;fontSize=9;" edge="1" parent="1" source="s1_5" target="l2_box_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_5" value="QoS 0 Limit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.5;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="s2_5" target="l2_box_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3_5" value="QoS 1 RFID" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.5;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="s3_5" target="l2_box_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l3_box_5" value="&lt;b&gt;LAYER 3: APPLICATION &amp; SAFETY CONTROLLER TIER — Node.js Express Server&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#44337A&quot;&gt;&lt;b&gt;Port: 3000&lt;/b&gt; | Fast Interlock Engine: &lt;b&gt;7.4 ms Reaction Time&lt;/b&gt; (&amp;lt; 8ms BS EN 12453) | Mongoose ODM Connection Pool (maxPoolSize: 10)&lt;br&gt;RESTful Endpoints: /api/gate/telemetry, /api/gate/policy, /api/gate/access, /api/gate/analytics | UK GDPR Pseudonymization Filter&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="345" width="940" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="e_l2_l3_5" value="Internal Event Dispatch &amp; Motor Command Feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=2;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="l2_box_5" target="l3_box_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l4_box_5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="450" width="560" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="l4_lbl_5" value="&lt;b&gt;LAYER 4: PERSISTENCE TIER (3-NODE REPLICA SET rs0)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="455" width="380" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="db_node1_5" value="&lt;b&gt;PRIMARY (rs0)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;:27017 (Pri: 2)&lt;br&gt;{w: 'majority'}&lt;br&gt;local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="140" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="db_node2_5" value="&lt;b&gt;SECONDARY 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;:27018 (Pri: 1)&lt;br&gt;Oplog Sync&lt;br&gt;Voting Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="320" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="db_node3_5" value="&lt;b&gt;SECONDARY 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;:27019 (Pri: 1)&lt;br&gt;Oplog Sync&lt;br&gt;Voting Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="500" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="l5_box_5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="450" width="350" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="l5_lbl_5" value="&lt;b&gt;LAYER 5: PRESENTATION &amp; ALERTS TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="725" y="455" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_dash_5" value="&lt;b&gt;Glassmorphic Web Dashboard&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port 3000 | Live SVG Gate Visualizer&lt;br&gt;Real-Time Telemetry &amp; Access Log&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="730" y="485" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ui_mail_5" value="&lt;b&gt;Security SMTP Alert Mailer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;Nodemailer Service (Gmail TLS)&lt;br&gt;Immediate Alert -&amp;gt; &lt;b&gt;pg016742@gmail.com&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="730" y="550" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="e_l3_l4_5" value="Mongoose Driver (w: 'majority')" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.8;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="l3_box_5" target="db_node1_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_l3_l5_ui_5" value="HTTP / WebSockets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="l3_box_5" target="ui_dash_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe_banner_5" value="&lt;b&gt;PIPELINE ARCHITECTURAL HIGHLIGHT:&lt;/b&gt; Hardware events ingested asynchronously over MQTT 1883 decouple sensor microcontrollers from database I/O latency. Emergency photocell triggers bypass storage queues to enforce the sub-8ms safety interlock, while continuous state is safely committed to the 3-node MongoDB replica set using majority write concerns." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="640" width="940" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 
-<!-- Y Axis Gridlines & Labels -->
-<mxCell id="g14" value="14 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="150" y="120" width="40" height="20" as="geometry" />
-</mxCell>
-<mxCell id="l_14" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="200" y="130" width="800" height="1" as="geometry" />
-</mxCell>
+  <!-- TAB 6: FIGURE 6 - 3-NODE REPLICA SET TOPOLOGY -->
+  <diagram id="diag_replica_topology" name="Fig 6 - 3-Node Replica Set rs0">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_6" value="&lt;b&gt;MongoDB 3-Node Replica Set Topology &amp; Quorum Consensus Architecture (rs0)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="140" y="20" width="880" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="client_box_6" value="&lt;b&gt;Node.js Express Driver&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Connection String:&lt;br&gt;&lt;i&gt;mongodb://127.0.0.1:27017,27018,27019/?replicaSet=rs0&lt;/i&gt;&lt;br&gt;Write Concern: &lt;b&gt;{ w: 'majority', j: true }&lt;/b&gt;&lt;br&gt;Read Preference: &lt;b&gt;primaryPreferred&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="140" y="85" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1_6" value="&lt;b&gt;NODE 1: PRIMARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27017&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;&lt;b&gt;Priority: 2&lt;/b&gt; | Voting Shares: 1&lt;br&gt;Data Path: /data/db1&lt;br&gt;Directs Client Read/Writes&lt;br&gt;Appends to &lt;b&gt;local.oplog.rs&lt;/b&gt;&lt;br&gt;WiredTiger Cache: 1.5 GB&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="80" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_pri_6" value="Client Writes {w: 'majority'}" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="client_box_6" target="n1_6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n2_6" value="&lt;b&gt;NODE 2: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27018&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;&lt;b&gt;Priority: 1&lt;/b&gt; | Voting Shares: 1&lt;br&gt;Data Path: /data/db2&lt;br&gt;Tails Primary &lt;b&gt;local.oplog.rs&lt;/b&gt;&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Eligible for Primary Election&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="310" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="n3_6" value="&lt;b&gt;NODE 3: SECONDARY&lt;/b&gt;&lt;br&gt;&lt;b&gt;127.0.0.1:27019&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;&lt;b&gt;Priority: 1&lt;/b&gt; | Voting Shares: 1&lt;br&gt;Data Path: /data/db3&lt;br&gt;Tails Primary &lt;b&gt;local.oplog.rs&lt;/b&gt;&lt;br&gt;Dynamic Ping Sync Source&lt;br&gt;Quorum Voter Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="690" y="310" width="250" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e_hb12_6" value="2000ms Heartbeats&#xa;&amp; Asynchronous Oplog Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="n1_6" target="n2_6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="260" />
+              <mxPoint x="345" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_hb13_6" value="2000ms Heartbeats&#xa;&amp; Asynchronous Oplog Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="n1_6" target="n3_6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="750" y="260" />
+              <mxPoint x="815" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="failover_box_6" value="&lt;b&gt;EMPIRICAL FAILOVER BENCHMARK (Primary Killed at T=0):&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;&lt;b&gt;T = 0.00s:&lt;/b&gt; SIGKILL dispatched to mongod on :27017&lt;br&gt;&lt;b&gt;T = 1.42s:&lt;/b&gt; Secondaries detect missed heartbeat threshold&lt;br&gt;&lt;b&gt;T = 1.65s:&lt;/b&gt; Node 2 initiates election; Node 3 casts vote (Quorum: 2/2)&lt;br&gt;&lt;b&gt;T = 1.84s:&lt;/b&gt; &lt;b&gt;Node 2 promoted to PRIMARY&lt;/b&gt;; client resumes writes&lt;br&gt;&lt;b&gt;Total Disruption:&lt;/b&gt; 1.84 seconds | Data Lost: &lt;b&gt;0 bytes&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FEB2B2;fontColor=#9B2C2C;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="820" y="85" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="q_box_6" value="&lt;b&gt;DISTRIBUTED CONSENSUS &amp; QUORUM MATHEMATICS:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;Total Cluster Members (N) = 3&lt;/b&gt; &amp;nbsp;|&amp;nbsp; &lt;b&gt;Majority Quorum Requirement (Q) = &amp;lfloor;N/2&amp;rfloor; + 1 = &amp;lfloor;3/2&amp;rfloor; + 1 = 2 of 3 Votes Required&lt;/b&gt;&lt;br&gt;&lt;b&gt;Split-Brain Prevention:&lt;/b&gt; If network partitions isolate any single node, it cannot reach Q=2 votes and automatically steps down to Secondary.&lt;br&gt;&lt;b&gt;Durability Guarantee:&lt;/b&gt; Writes acknowledged under &lt;b&gt;{ w: 'majority', j: true }&lt;/b&gt; persist to on-disk journals of a quorum before returning success to the driver, guaranteeing zero rollback.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="140" y="490" width="880" height="75" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 
-<mxCell id="g10" value="10 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="150" y="200" width="40" height="20" as="geometry" />
-</mxCell>
-<mxCell id="l_10" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="200" y="210" width="800" height="1" as="geometry" />
-</mxCell>
+  <!-- TAB 7: FIGURE 7 - LATENCY BENCHMARK CHART -->
+  <diagram id="diag_latency_bench" name="Fig 7 - Latency Benchmark Chart">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_7" value="&lt;b&gt;Empirical Latency Benchmarks on 3-Node MongoDB Replica Set rs0 (Milliseconds)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="chart_bg_7" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="g14_7" value="14 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="110" width="45" height="20" as="geometry" /></mxCell>
+        <mxCell id="l_14_7" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1"><mxGeometry x="180" y="120" width="860" height="1" as="geometry" /></mxCell>
+        <mxCell id="g10_7" value="10 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="190" width="45" height="20" as="geometry" /></mxCell>
+        <mxCell id="l_10_7" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1"><mxGeometry x="180" y="200" width="860" height="1" as="geometry" /></mxCell>
+        <mxCell id="g6_7" value="6 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="270" width="45" height="20" as="geometry" /></mxCell>
+        <mxCell id="l_6_7" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1"><mxGeometry x="180" y="280" width="860" height="1" as="geometry" /></mxCell>
+        <mxCell id="g2_7" value="2 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="350" width="45" height="20" as="geometry" /></mxCell>
+        <mxCell id="l_2_7" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1"><mxGeometry x="180" y="360" width="860" height="1" as="geometry" /></mxCell>
+        <mxCell id="g0_7" value="0 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="390" width="45" height="20" as="geometry" /></mxCell>
+        <mxCell id="l_0_7" value="" style="line;strokeWidth=2;strokeColor=#4A5568;" vertex="1" parent="1"><mxGeometry x="180" y="400" width="860" height="1" as="geometry" /></mxCell>
 
-<mxCell id="g6" value="6 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="150" y="280" width="40" height="20" as="geometry" />
-</mxCell>
-<mxCell id="l_6" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="200" y="290" width="800" height="1" as="geometry" />
-</mxCell>
+        <mxCell id="bar1_7" value="&lt;b&gt;1.30 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="205" y="374" width="95" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar1_7" value="&lt;b&gt;w: 1 Write&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Primary RAM Ack&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="195" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<mxCell id="g2" value="2 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="150" y="360" width="40" height="20" as="geometry" />
-</mxCell>
-<mxCell id="l_2" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
-  <mxGeometry x="200" y="370" width="800" height="1" as="geometry" />
-</mxCell>
+        <mxCell id="bar2_7" value="&lt;b&gt;12.61 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="345" y="148" width="95" height="252" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar2_7" value="&lt;b&gt;w: &quot;majority&quot;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Journaled Quorum&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="335" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<mxCell id="g0" value="0 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="150" y="400" width="40" height="20" as="geometry" />
-</mxCell>
-<mxCell id="l_0" value="" style="line;strokeWidth=2;strokeColor=#CBD5E0;" vertex="1" parent="1">
-  <mxGeometry x="200" y="410" width="800" height="1" as="geometry" />
-</mxCell>
+        <mxCell id="bar3_7" value="&lt;b&gt;10.72 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="485" y="186" width="95" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar3_7" value="&lt;b&gt;Policy Create&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Schema Validated&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="475" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<!-- Bar 1: w: 1 (1.30 ms) -->
-<!-- scale: 20px per ms -> 1.30ms = 26px height -> y = 410 - 26 = 384 -->
-<mxCell id="b1" value="&lt;b&gt;1.30 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="230" y="384" width="90" height="26" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b1" value="&lt;b&gt;w: 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Memory Ack&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="225" y="420" width="100" height="40" as="geometry" />
-</mxCell>
+        <mxCell id="bar4_7" value="&lt;b&gt;2.75 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="625" y="345" width="95" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar4_7" value="&lt;b&gt;Indexed Read&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2F855A&quot;&gt;Compound IXSCAN&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="615" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<!-- Bar 2: Create (10.72 ms) -> 214px height -> y = 410 - 214 = 196 -->
-<mxCell id="b2" value="&lt;b&gt;10.72 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="360" y="196" width="90" height="214" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b2" value="&lt;b&gt;POST Create&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Schema Validated&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="355" y="420" width="100" height="40" as="geometry" />
-</mxCell>
+        <mxCell id="bar5_7" value="&lt;b&gt;8.71 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="765" y="226" width="95" height="174" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar5_7" value="&lt;b&gt;Policy Update&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Atomic $set Op&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="755" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<!-- Bar 3: Indexed Read (2.75 ms) -> 55px height -> y = 410 - 55 = 355 -->
-<mxCell id="b3" value="&lt;b&gt;2.75 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="490" y="355" width="90" height="55" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b3" value="&lt;b&gt;GET Read&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;IXSCAN Index&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="485" y="420" width="100" height="40" as="geometry" />
-</mxCell>
+        <mxCell id="bar6_7" value="&lt;b&gt;12.92 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="905" y="142" width="95" height="258" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar6_7" value="&lt;b&gt;Policy Delete&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;Badge Revocation&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="895" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
 
-<!-- Bar 4: w: majority (12.61 ms) -> 252px height -> y = 410 - 252 = 158 -->
-<mxCell id="b4" value="&lt;b&gt;12.61 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="620" y="158" width="90" height="252" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b4" value="&lt;b&gt;w: 'majority'&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Journaled Quorum&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="615" y="420" width="100" height="40" as="geometry" />
-</mxCell>
+        <mxCell id="callout_7" value="&lt;b&gt;KEY EMPIRICAL TAKEAWAYS:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;1. Indexing Speedup (66x):&lt;/b&gt; Without index (COLLSCAN), fetching 50 telemetry points requires &lt;b&gt;182.40 ms&lt;/b&gt; scanning 5,000 documents. With compound index &lt;i&gt;{ homeId: 1, timestamp: -1 }&lt;/i&gt;, execution drops to &lt;b&gt;2.75 ms&lt;/b&gt; scanning exactly 50 index keys.&lt;br&gt;&lt;b&gt;2. Durability Cost (+11.31 ms):&lt;/b&gt; Memory-acknowledged write (&lt;i&gt;w: 1&lt;/i&gt;) completes in &lt;b&gt;1.30 ms&lt;/b&gt;, whereas quorum-journaled write (&lt;i&gt;w: &quot;majority&quot;&lt;/i&gt;) requires &lt;b&gt;12.61 ms&lt;/b&gt;. This 11.31 ms network round-trip guarantee eliminates dirty reads and guarantees zero data loss under abrupt node failure.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="460" width="940" height="65" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 
-<!-- Bar 5: Update (8.71 ms) -> 174px height -> y = 410 - 174 = 236 -->
-<mxCell id="b5" value="&lt;b&gt;8.71 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="750" y="236" width="90" height="174" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b5" value="&lt;b&gt;PUT Update&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;In-Place BSON&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="745" y="420" width="100" height="40" as="geometry" />
-</mxCell>
-
-<!-- Bar 6: Delete (12.92 ms) -> 258px height -> y = 410 - 258 = 152 -->
-<mxCell id="b6" value="&lt;b&gt;12.92 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#742A2A;verticalAlign=bottom;fontSize=10;spacingBottom=4;" vertex="1" parent="1">
-  <mxGeometry x="880" y="152" width="90" height="258" as="geometry" />
-</mxCell>
-<mxCell id="lbl_b6" value="&lt;b&gt;DELETE&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Index Cleaned&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
-  <mxGeometry x="875" y="420" width="100" height="40" as="geometry" />
-</mxCell>
-
-<!-- Callout Note -->
-<mxCell id="bench_note" value="&lt;b&gt;KEY BENCHMARK TAKEAWAYS:&lt;/b&gt; Majority quorum introduces an 11.31 ms network coordination penalty over single-node writes, but guarantees zero data loss across node failovers. Compound index { homeId: 1, timestamp: -1 } reduces point read latency to 2.75 ms (a 66-fold improvement over COLLSCAN)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
-  <mxGeometry x="140" y="495" width="880" height="45" as="geometry" />
-</mxCell>
-</root>
+  <!-- TAB 8: FIGURE 8 - GATE SAFETY STATE MACHINE -->
+  <diagram id="diag_gate_fsm" name="Fig 8 - Gate Safety State Machine">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title_8" value="&lt;b&gt;Smart Residential Gate Finite State Machine (FSM) &amp; Emergency Safety Auto-Reverse Logic&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="st_closed_8" value="&lt;b&gt;FULLY_CLOSED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Idle / Electrically Braked&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; Pin D7 CLOSED&lt;br&gt;&lt;b&gt;Safety Beam:&lt;/b&gt; Clear (Monitoring)&lt;br&gt;&lt;b&gt;Gate Angle:&lt;/b&gt; 0&amp;deg; | Current: 0.0A&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="140" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st_opening_8" value="&lt;b&gt;OPENING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Forward Drive Running&lt;br&gt;&lt;b&gt;Current Draw:&lt;/b&gt; ~3.82 Amps&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; AJAR (Pin D7 High)&lt;br&gt;&lt;b&gt;Travel Duration:&lt;/b&gt; ~8.5 seconds&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st_open_8" value="&lt;b&gt;FULLY_OPEN&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Idle / Dwell State&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; Pin D7 OPEN Contact&lt;br&gt;&lt;b&gt;Dwell Timer:&lt;/b&gt; 15-Second Inactivity&lt;br&gt;&lt;b&gt;Gate Angle:&lt;/b&gt; 90&amp;deg; | Current: 0.0A&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st_closing_8" value="&lt;b&gt;CLOSING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Reverse Drive Running&lt;br&gt;&lt;b&gt;Current Draw:&lt;/b&gt; ~4.12 Amps&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; AJAR (Travel Active)&lt;br&gt;&lt;b&gt;Photocell:&lt;/b&gt; High-Frequency Active Scan&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="320" width="220" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="tr_c_o_8" value="Valid RFID Scan (Mifare)&#xa;or Mobile REST /api/gate/open" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=2;fontColor=#2C5282;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_closed_8" target="st_opening_8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tr_o_fo_8" value="Microswitch Contact:&#xa;Limit = FULLY_OPEN" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_opening_8" target="st_open_8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tr_fo_c_8" value="15s Inactivity Timer Expired&#xa;&amp; Safety Beam Unbroken" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=2;fontColor=#7B341E;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_open_8" target="st_closing_8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="930" y="367" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tr_c_fc_8" value="Microswitch Contact:&#xa;Limit = FULLY_CLOSED" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_closing_8" target="st_closed_8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="250" y="367" /></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tr_safety_8" value="&lt;b&gt;EMERGENCY SAFETY INTERLOCK (BS EN 12453)&lt;/b&gt;&lt;br&gt;&lt;b&gt;Infrared Beam BLOCKED by Obstacle / Vehicle / Child&lt;/b&gt;&lt;br&gt;Immediate H-Bridge Motor Reverse Dispatched in &lt;b&gt;&amp;lt; 7.4 ms&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;curved=1;rounded=1;strokeColor=#C53030;strokeWidth=3.5;fontColor=#C53030;fontSize=10;labelBackgroundColor=#FFF5F5;" edge="1" parent="1" source="st_closing_8" target="st_open_8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="270" />
+              <mxPoint x="790" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="safety_event_box_8" value="&lt;b&gt;SAFETY EVENT TELEMETRY DISPATCH:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;1. Intercepted on MQTT topic: &lt;i&gt;iothings/home/{id}/gate/safety&lt;/i&gt;&lt;br&gt;2. Controller halts motor within &lt;b&gt;7.4 ms&lt;/b&gt; (bypasses database queue)&lt;br&gt;3. Appends critical alert document to &lt;i&gt;system_alerts&lt;/i&gt; collection&lt;br&gt;4. Asynchronously dispatches SMTP security email to &lt;b&gt;pg016742@gmail.com&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FEB2B2;fontColor=#9B2C2C;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="140" y="235" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="callout_8" value="&lt;b&gt;BRITISH &amp; EUROPEAN SAFETY STANDARD BS EN 12453:2017 MANDATE:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;Motorized residential gates must prevent crush, shear, and impact injuries. The standard mandates maximum dynamic impact force &amp;le; 400 N and obstacle release time &amp;le; 750 ms. The IoThings optical photocell hardware debounce (50 ms) coupled with the Node.js sub-8ms safety interlock (measured at &lt;b&gt;7.4 ms&lt;/b&gt;) delivers 100x safety margin, immediately reverting closing gates to full open upon any obstruction.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="445" width="940" height="55" as="geometry" />
+        </mxCell>
+      </root>
     </mxGraphModel>
   </diagram>
 </mxfile>

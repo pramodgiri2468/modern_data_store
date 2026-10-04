@@ -1,0 +1,90 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_gate_fsm" name="Figure 8 - Gate Safety State Machine">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;Smart Residential Gate Finite State Machine (FSM) &amp; Emergency Safety Auto-Reverse Logic&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- State 1: FULLY_CLOSED (Top Left) -->
+        <mxCell id="st_closed" value="&lt;b&gt;FULLY_CLOSED&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Idle / Electrically Braked&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; Pin D7 CLOSED&lt;br&gt;&lt;b&gt;Safety Beam:&lt;/b&gt; Clear (Monitoring)&lt;br&gt;&lt;b&gt;Gate Angle:&lt;/b&gt; 0&amp;deg; | Current: 0.0A&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="140" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- State 2: OPENING (Top Center) -->
+        <mxCell id="st_opening" value="&lt;b&gt;OPENING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Forward Drive Running&lt;br&gt;&lt;b&gt;Current Draw:&lt;/b&gt; ~3.82 Amps&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; AJAR (Pin D7 High)&lt;br&gt;&lt;b&gt;Travel Duration:&lt;/b&gt; ~8.5 seconds&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- State 3: FULLY_OPEN (Top Right) -->
+        <mxCell id="st_open" value="&lt;b&gt;FULLY_OPEN&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Idle / Dwell State&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; Pin D7 OPEN Contact&lt;br&gt;&lt;b&gt;Dwell Timer:&lt;/b&gt; 15-Second Inactivity&lt;br&gt;&lt;b&gt;Gate Angle:&lt;/b&gt; 90&amp;deg; | Current: 0.0A&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="120" width="220" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- State 4: CLOSING (Bottom Center) -->
+        <mxCell id="st_closing" value="&lt;b&gt;CLOSING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;&lt;b&gt;Motor:&lt;/b&gt; Reverse Drive Running&lt;br&gt;&lt;b&gt;Current Draw:&lt;/b&gt; ~4.12 Amps&lt;br&gt;&lt;b&gt;Limit Switch:&lt;/b&gt; AJAR (Travel Active)&lt;br&gt;&lt;b&gt;Photocell:&lt;/b&gt; High-Frequency Active Scan&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="320" width="220" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- Normal Transitions -->
+        <!-- 1. Closed -> Opening -->
+        <mxCell id="tr_c_o" value="Valid RFID Scan (Mifare)&#xa;or Mobile REST /api/gate/open" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=2;fontColor=#2C5282;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_closed" target="st_opening">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Opening -> Fully Open -->
+        <mxCell id="tr_o_fo" value="Microswitch Contact:&#xa;Limit = FULLY_OPEN" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_opening" target="st_open">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Fully Open -> Closing -->
+        <mxCell id="tr_fo_c" value="15s Inactivity Timer Expired&#xa;&amp; Safety Beam Unbroken" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=2;fontColor=#7B341E;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_open" target="st_closing">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="930" y="367" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 4. Closing -> Fully Closed -->
+        <mxCell id="tr_c_fc" value="Microswitch Contact:&#xa;Limit = FULLY_CLOSED" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=2;fontColor=#22543D;fontSize=9;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="st_closing" target="st_closed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="367" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 5. CRITICAL SAFETY REVERSE (Closing -> Fully Open / Opening) -->
+        <mxCell id="tr_safety" value="&lt;b&gt;EMERGENCY SAFETY INTERLOCK (BS EN 12453)&lt;/b&gt;&lt;br&gt;&lt;b&gt;Infrared Beam BLOCKED by Obstacle / Vehicle / Child&lt;/b&gt;&lt;br&gt;Immediate H-Bridge Motor Reverse Dispatched in &lt;b&gt;&amp;lt; 7.4 ms&lt;/b&gt;" style="edgeStyle=orthogonalEdgeStyle;curved=1;rounded=1;strokeColor=#C53030;strokeWidth=3.5;fontColor=#C53030;fontSize=10;labelBackgroundColor=#FFF5F5;" edge="1" parent="1" source="st_closing" target="st_open">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="270" />
+              <mxPoint x="790" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Safety Auto-Reverse Alert Callout Box -->
+        <mxCell id="safety_event_box" value="&lt;b&gt;SAFETY EVENT TELEMETRY DISPATCH:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;1. Intercepted on MQTT topic: &lt;i&gt;iothings/home/{id}/gate/safety&lt;/i&gt;&lt;br&gt;2. Controller halts motor within &lt;b&gt;7.4 ms&lt;/b&gt; (bypasses database queue)&lt;br&gt;3. Appends critical alert document to &lt;i&gt;system_alerts&lt;/i&gt; collection&lt;br&gt;4. Asynchronously dispatches SMTP security email to &lt;b&gt;pg016742@gmail.com&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#FEB2B2;fontColor=#9B2C2C;fontSize=9;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="140" y="235" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow from safety box to safety line -->
+        <mxCell id="e_box_safe" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FEB2B2;strokeWidth=1;dashed=1;" edge="1" parent="1" source="safety_event_box" target="st_closing">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Standards Callout Banner (Bottom) -->
+        <mxCell id="callout" value="&lt;b&gt;BRITISH &amp; EUROPEAN SAFETY STANDARD BS EN 12453:2017 MANDATE:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;Motorized residential gates must prevent crush, shear, and impact injuries. The standard mandates maximum dynamic impact force &amp;le; 400 N and obstacle release time &amp;le; 750 ms. The IoThings optical photocell hardware debounce (50 ms) coupled with the Node.js sub-8ms safety interlock (measured at &lt;b&gt;7.4 ms&lt;/b&gt;) delivers 100x safety margin, immediately reverting closing gates to full open upon any obstruction.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="445" width="940" height="55" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

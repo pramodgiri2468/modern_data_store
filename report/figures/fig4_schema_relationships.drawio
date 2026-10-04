@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_schema_rel" name="Figure 4 - Database Schema Relationships">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;IoThings Multi-Collection Relational/Referential Schema &amp; Document Relationships&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="980" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Collection 1: gate_state -->
+        <mxCell id="col_gate_state" value="&lt;b&gt;gate_state&lt;/b&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Unique Shard Key]&lt;/font&gt;&lt;br&gt;&lt;b&gt;gateId:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('GATE_01')&lt;/font&gt;&lt;br&gt;&lt;b&gt;currentStatus:&lt;/b&gt; String &lt;font color=&quot;#2F855A&quot;&gt;('CLOSED'|'OPENING'|'OPEN'|'CLOSING')&lt;/font&gt;&lt;br&gt;&lt;b&gt;lastAction:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('EMERGENCY_REVERSE'|'RFID_OPEN')&lt;/font&gt;&lt;br&gt;&lt;b&gt;motorCurrentAmps:&lt;/b&gt; Double &lt;font color=&quot;#718096&quot;&gt;(3.82 A)&lt;/font&gt;&lt;br&gt;&lt;b&gt;batteryVoltage:&lt;/b&gt; Double &lt;font color=&quot;#718096&quot;&gt;(13.6 V)&lt;/font&gt;&lt;br&gt;&lt;b&gt;updatedAt:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Last Heartbeat)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="90" width="280" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Collection 2: telemetry_stream -->
+        <mxCell id="col_telemetry" value="&lt;b&gt;telemetry_stream&lt;/b&gt; &lt;font color=&quot;#DD6B20&quot;&gt;&lt;b&gt;(TTL: 30 Days)&lt;/b&gt;&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#DD6B20&quot;&gt;[TTL Expire: 2,592,000s]&lt;/font&gt;&lt;br&gt;&lt;b&gt;photocell:&lt;/b&gt; {&lt;br&gt;&amp;nbsp;&amp;nbsp;status: String &lt;font color=&quot;#718096&quot;&gt;('CLEAR' | 'BLOCKED')&lt;/font&gt;,&lt;br&gt;&amp;nbsp;&amp;nbsp;signalStrength: Double &lt;font color=&quot;#718096&quot;&gt;(98.4%)&lt;/font&gt;&lt;br&gt;}&lt;br&gt;&lt;b&gt;limitSwitch:&lt;/b&gt; {&lt;br&gt;&amp;nbsp;&amp;nbsp;state: String &lt;font color=&quot;#718096&quot;&gt;('CLOSED' | 'OPEN' | 'AJAR')&lt;/font&gt;,&lt;br&gt;&amp;nbsp;&amp;nbsp;contactClosed: Boolean&lt;br&gt;}&lt;br&gt;&lt;b&gt;motor:&lt;/b&gt; { currentDraw: Double, voltage: Double }&lt;br&gt;&lt;font color=&quot;#2F855A&quot;&gt;&lt;b&gt;Compound Index:&lt;/b&gt; { homeId: 1, timestamp: -1 }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="80" width="380" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Collection 3: access_policies -->
+        <mxCell id="col_policies" value="&lt;b&gt;access_policies&lt;/b&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;badgeId:&lt;/b&gt; String &lt;font color=&quot;#6B46C1&quot;&gt;[Unique B-Tree Index]&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;holderName:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;(Pseudonymized)&lt;/font&gt;&lt;br&gt;&lt;b&gt;role:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('RESIDENT'|'VISITOR'|'DELIVERY')&lt;/font&gt;&lt;br&gt;&lt;b&gt;allowedDays:&lt;/b&gt; Array&amp;lt;Int&amp;gt; &lt;font color=&quot;#718096&quot;&gt;([1, 2, 3, 4, 5])&lt;/font&gt;&lt;br&gt;&lt;b&gt;timeWindow:&lt;/b&gt; { start: &quot;08:00&quot;, end: &quot;20:00&quot; }&lt;br&gt;&lt;b&gt;enabled:&lt;/b&gt; Boolean &lt;font color=&quot;#718096&quot;&gt;(true)&lt;/font&gt;&lt;br&gt;&lt;b&gt;expiresAt:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Nullable)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="330" width="280" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- Collection 4: access_events -->
+        <mxCell id="col_events" value="&lt;b&gt;access_events&lt;/b&gt; &lt;font color=&quot;#718096&quot;&gt;(Security Ingress Audit)&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId &lt;font color=&quot;#718096&quot;&gt;(PK)&lt;/font&gt;&lt;br&gt;&lt;b&gt;badgeId:&lt;/b&gt; String &lt;font color=&quot;#6B46C1&quot;&gt;[FK Index Reference]&lt;/font&gt;&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt;&lt;br&gt;&lt;b&gt;gateId:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('GATE_01')&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Scanned Time)&lt;/font&gt;&lt;br&gt;&lt;b&gt;accessDecision:&lt;/b&gt; String &lt;font color=&quot;#2F855A&quot;&gt;('GRANTED'&lt;/font&gt; | &lt;font color=&quot;#C53030&quot;&gt;'DENIED')&lt;/font&gt;&lt;br&gt;&lt;b&gt;reasonCode:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('VALID_CREDENTIAL' | 'OUTSIDE_HOURS')&lt;/font&gt;&lt;br&gt;&lt;b&gt;scannedReader:&lt;/b&gt; String &lt;font color=&quot;#718096&quot;&gt;('RFID_ENTRY_D5')&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#6B46C1&quot;&gt;&lt;b&gt;Compound Index:&lt;/b&gt; { badgeId: 1, timestamp: -1 }&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#E53E3E;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="325" width="380" height="175" as="geometry" />
+        </mxCell>
+
+        <!-- Collection 5: system_alerts (Middle Bottom) -->
+        <mxCell id="col_alerts" value="&lt;b&gt;system_alerts&lt;/b&gt; &lt;font color=&quot;#C53030&quot;&gt;&lt;b&gt;(Critical Safety &amp; Intrusion Log)&lt;/b&gt;&lt;/font&gt;&lt;hr&gt;&lt;b&gt;_id:&lt;/b&gt; ObjectId (PK)&lt;br&gt;&lt;b&gt;homeId:&lt;/b&gt; String &lt;font color=&quot;#2B6CB0&quot;&gt;[Parent Ref]&lt;/font&gt; &amp;nbsp;|&amp;nbsp; &lt;b&gt;gateId:&lt;/b&gt; String&lt;br&gt;&lt;b&gt;alertType:&lt;/b&gt; String &lt;font color=&quot;#C53030&quot;&gt;('SAFETY_AUTO_REVERSE' | 'TAMPER_FORCE' | 'REPEATED_DENIED_RFID')&lt;/font&gt;&lt;br&gt;&lt;b&gt;severity:&lt;/b&gt; String &lt;font color=&quot;#C53030&quot;&gt;('CRITICAL' | 'WARNING')&lt;/font&gt;&lt;br&gt;&lt;b&gt;reactionTimeMs:&lt;/b&gt; Double &lt;font color=&quot;#22543D&quot;&gt;(7.4 ms &amp;lt; 8ms BS EN 12453)&lt;/font&gt;&lt;br&gt;&lt;b&gt;notifiedEmail:&lt;/b&gt; Boolean &lt;font color=&quot;#718096&quot;&gt;(Nodemailer SMTP dispatched to pg016742@gmail.com)&lt;/font&gt;&lt;br&gt;&lt;b&gt;timestamp:&lt;/b&gt; ISODate &lt;font color=&quot;#718096&quot;&gt;(Indexed for Emergency Audit)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#2D3748;fontSize=10;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="540" width="620" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Parent-Reference Connectors -->
+        <!-- gate_state -> telemetry_stream (1 : N via homeId) -->
+        <mxCell id="e_state_telem" value="1 : N Parent Ref (homeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="col_gate_state" target="col_telemetry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- access_policies -> access_events (1 : N via badgeId) -->
+        <mxCell id="e_pol_event" value="1 : N Credential Validation (badgeId)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=1.8;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="col_policies" target="col_events">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gate_state -> access_policies (1 : N via homeId) -->
+        <mxCell id="e_state_pol" value="1 : N Home Badges" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="col_gate_state" target="col_policies">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- access_events -> system_alerts (Triggers Critical Security Alert if DENIED repeatedly) -->
+        <mxCell id="e_event_alert" value="Repeated Denied Scans -> System Alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.5;dashed=1;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="col_events" target="col_alerts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gate_state -> system_alerts (Safety auto-reverse alert) -->
+        <mxCell id="e_state_alert" value="Photocell Safety Interlock Alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.5;dashed=1;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="col_gate_state" target="col_alerts">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- UK GDPR & Indexing Governance Callout -->
+        <mxCell id="callout_gdpr" value="&lt;b&gt;DATA GOVERNANCE &amp; UK GDPR COMPLIANCE NOTE:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;1. Storage Limitation (Art. 5(1)(e)):&lt;/b&gt; Automated MongoDB TTL index on &lt;i&gt;telemetry_stream.timestamp&lt;/i&gt; expires records after 30 days (2,592,000s) to prevent unbounded disk growth.&lt;br&gt;&lt;b&gt;2. Data Minimisation (Art. 5(1)(c)):&lt;/b&gt; High-frequency telemetry retains zero personal identity; resident names are restricted to &lt;i&gt;access_policies&lt;/i&gt; with pseudonymized tokens.&lt;br&gt;&lt;b&gt;3. Index Performance:&lt;/b&gt; Compound B-Tree index &lt;i&gt;{ homeId: 1, timestamp: -1 }&lt;/i&gt; reduces recent telemetry query latency from 182.4ms (COLLSCAN) to &lt;b&gt;2.75ms (IXSCAN)&lt;/b&gt;.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="680" width="980" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

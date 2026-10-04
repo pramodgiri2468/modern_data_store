@@ -1,0 +1,142 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_system_pipeline" name="Figure 5 - End-to-End System Pipeline">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;IoThings Smart Residential Gate Automation — End-to-End System Pipeline&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 1: Perception Layer -->
+        <mxCell id="l1_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="l1_lbl" value="&lt;b&gt;LAYER 1: PERCEPTION TIER (GATE HARDWARE SENSORS &amp; ACTUATORS)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="85" width="450" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1" value="&lt;b&gt;1. Active Optical Photocell&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Infrared Safety Beam&lt;br&gt;Pin: &lt;b&gt;GPIO D4&lt;/b&gt; | 50ms Debounce&lt;br&gt;Detects Obstacles / Vehicles&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="145" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2" value="&lt;b&gt;2. Mechanical Limit Switch&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Dual Contact Roller Microswitch&lt;br&gt;Pin: &lt;b&gt;GPIO D7&lt;/b&gt; (NC Fail-Safe)&lt;br&gt;States: CLOSED / OPEN / AJAR&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="380" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3" value="&lt;b&gt;3. 13.56 MHz RFID Reader&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Mifare Classic / DESFire Fobs&lt;br&gt;Protocol: &lt;b&gt;Wiegand-26&lt;/b&gt; to UART&lt;br&gt;Reads Resident &amp; Visitor Badges&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="615" y="115" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4" value="&lt;b&gt;4. DC Actuator &amp; ACS712&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;12V Linear Screw Actuator&lt;br&gt;Current: ~3.8A to 4.2A&lt;br&gt;Stall &amp; Obstacle Detection&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="115" width="190" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 2: Transport & Ingestion -->
+        <mxCell id="l2_box" value="&lt;b&gt;LAYER 2: TRANSPORT &amp; INGESTION TIER — Embedded Aedes MQTT Broker&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#234E52&quot;&gt;&lt;b&gt;Port: 1883&lt;/b&gt; | TCP Keep-Alive: 60s | In-Memory Fast Event Pub/Sub&lt;br&gt;Topics: &lt;i&gt;iothings/home/{id}/gate/telemetry&lt;/i&gt; (QoS 0) &amp;nbsp;|&amp;nbsp; &lt;i&gt;iothings/home/{id}/gate/safety&lt;/i&gt; (QoS 1) &amp;nbsp;|&amp;nbsp; &lt;i&gt;iothings/home/{id}/gate/command&lt;/i&gt; (QoS 1)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="240" width="940" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Sensor MQTT Pub Arrows -->
+        <mxCell id="e_s1" value="QoS 1 Safety" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.8;fontColor=#C53030;fontSize=9;" edge="1" parent="1" source="s1" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2" value="QoS 0 Limit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.5;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="s2" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3" value="QoS 1 RFID" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.5;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="s3" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4" value="QoS 0 Current" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#319795;strokeWidth=1.5;fontColor=#234E52;fontSize=9;" edge="1" parent="1" source="s4" target="l2_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 3: Application & Safety Controller -->
+        <mxCell id="l3_box" value="&lt;b&gt;LAYER 3: APPLICATION &amp; SAFETY CONTROLLER TIER — Node.js Express Server&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#44337A&quot;&gt;&lt;b&gt;Port: 3000&lt;/b&gt; | Fast Interlock Engine: &lt;b&gt;7.4 ms Reaction Time&lt;/b&gt; (&amp;lt; 8ms BS EN 12453) | Mongoose ODM Connection Pool (maxPoolSize: 10)&lt;br&gt;RESTful Endpoints: /api/gate/telemetry, /api/gate/policy, /api/gate/access, /api/gate/analytics | UK GDPR Pseudonymization Filter&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="345" width="940" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow L2 -> L3 -->
+        <mxCell id="e_l2_l3" value="Internal Event Dispatch &amp; Motor Command Feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=2;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="l2_box" target="l3_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 4: Distributed Persistence Tier -->
+        <mxCell id="l4_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="450" width="560" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="l4_lbl" value="&lt;b&gt;LAYER 4: PERSISTENCE TIER (3-NODE REPLICA SET rs0)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="455" width="380" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_node1" value="&lt;b&gt;PRIMARY (rs0)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;:27017 (Pri: 2)&lt;br&gt;{w: 'majority'}&lt;br&gt;local.oplog.rs&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="140" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_node2" value="&lt;b&gt;SECONDARY 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;:27018 (Pri: 1)&lt;br&gt;Oplog Sync&lt;br&gt;Voting Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="320" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_node3" value="&lt;b&gt;SECONDARY 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;:27019 (Pri: 1)&lt;br&gt;Oplog Sync&lt;br&gt;Voting Member&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=6;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="500" y="485" width="150" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_math" value="Quorum Consensus: &amp;lfloor;3/2&amp;rfloor; + 1 = 2 votes | Automated 1.84s Failover" style="text;html=1;align=center;verticalAlign=middle;fontColor=#2F855A;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="140" y="585" width="510" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 5: Presentation & Alerting Tier -->
+        <mxCell id="l5_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="450" width="350" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="l5_lbl" value="&lt;b&gt;LAYER 5: PRESENTATION &amp; ALERTS TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="725" y="455" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui_dash" value="&lt;b&gt;Glassmorphic Web Dashboard&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port 3000 | Live SVG Gate Visualizer&lt;br&gt;Real-Time Telemetry &amp; Access Log&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="730" y="485" width="310" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui_mail" value="&lt;b&gt;Security SMTP Alert Mailer&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;Nodemailer Service (Gmail TLS)&lt;br&gt;Immediate Alert -&amp;gt; &lt;b&gt;pg016742@gmail.com&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="730" y="550" width="310" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Connectors L3 -> L4 & L5 -->
+        <mxCell id="e_l3_l4" value="Mongoose Driver (w: 'majority')" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.8;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="l3_box" target="db_node1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="215" y="430" />
+              <mxPoint x="215" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e_l3_l5_ui" value="HTTP / WebSockets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.5;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="l3_box" target="ui_dash">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="885" y="430" />
+              <mxPoint x="885" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e_l3_l5_mail" value="Emergency SMTP Dispatch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=1.5;dashed=1;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="l3_box" target="ui_mail">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="430" />
+              <mxPoint x="1000" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Summary Banner -->
+        <mxCell id="pipe_banner" value="&lt;b&gt;PIPELINE ARCHITECTURAL HIGHLIGHT:&lt;/b&gt; Hardware events ingested asynchronously over MQTT 1883 decouple sensor microcontrollers from database I/O latency. Emergency photocell triggers bypass storage queues to enforce the sub-8ms safety interlock, while continuous state is safely committed to the 3-node MongoDB replica set using majority write concerns." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="640" width="940" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,134 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_latency_bench" name="Figure 7 - Latency Benchmark Chart">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;Empirical Latency Benchmarks on 3-Node MongoDB Replica Set rs0 (Milliseconds)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Chart Canvas -->
+        <mxCell id="chart_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="430" as="geometry" />
+        </mxCell>
+
+        <!-- Y Axis Gridlines & Labels -->
+        <mxCell id="g14" value="14 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="110" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_14" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="120" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g12" value="12 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="150" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_12" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="160" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g10" value="10 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="190" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_10" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="200" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g8" value="8 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="230" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_8" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="240" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g6" value="6 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="270" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_6" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="280" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g4" value="4 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="310" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_4" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="320" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g2" value="2 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="350" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_2" value="" style="line;strokeWidth=1;strokeColor=#E2E8F0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="360" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <!-- Base Line (0 ms) -->
+        <mxCell id="g0" value="0 ms" style="text;html=1;align=right;verticalAlign=middle;fontColor=#718096;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="130" y="390" width="45" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l_0" value="" style="line;strokeWidth=2;strokeColor=#4A5568;" vertex="1" parent="1">
+          <mxGeometry x="180" y="400" width="860" height="1" as="geometry" />
+        </mxCell>
+
+        <!-- Scale: 20px per ms -> Y_pos = 400 - (val * 20) -->
+
+        <!-- Bar 1: w: 1 Write (1.30 ms) -> height = 26px, y = 374 -->
+        <mxCell id="bar1" value="&lt;b&gt;1.30 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6FFFA;strokeColor=#319795;fontColor=#234E52;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="205" y="374" width="95" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar1" value="&lt;b&gt;w: 1 Write&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Primary RAM Ack&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="195" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Bar 2: w: majority Write (12.61 ms) -> height = 252px, y = 148 -->
+        <mxCell id="bar2" value="&lt;b&gt;12.61 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="345" y="148" width="95" height="252" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar2" value="&lt;b&gt;w: &quot;majority&quot;&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Journaled Quorum&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="335" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Bar 3: Policy Create (10.72 ms) -> height = 214px, y = 186 -->
+        <mxCell id="bar3" value="&lt;b&gt;10.72 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="485" y="186" width="95" height="214" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar3" value="&lt;b&gt;Policy Create&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Schema Validated&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="475" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Bar 4: Indexed Read (2.75 ms) -> height = 55px, y = 345 -->
+        <mxCell id="bar4" value="&lt;b&gt;2.75 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="625" y="345" width="95" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar4" value="&lt;b&gt;Indexed Read&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2F855A&quot;&gt;Compound IXSCAN&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="615" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Bar 5: Policy Update (8.71 ms) -> height = 174px, y = 226 -->
+        <mxCell id="bar5" value="&lt;b&gt;8.71 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="765" y="226" width="95" height="174" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar5" value="&lt;b&gt;Policy Update&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#718096&quot;&gt;Atomic $set Op&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="755" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Bar 6: Policy Delete (12.92 ms) -> height = 258px, y = 142 -->
+        <mxCell id="bar6" value="&lt;b&gt;12.92 ms&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;verticalAlign=bottom;fontSize=10;spacingBottom=3;" vertex="1" parent="1">
+          <mxGeometry x="905" y="142" width="95" height="258" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_bar6" value="&lt;b&gt;Policy Delete&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;Badge Revocation&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="895" y="410" width="115" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Callout Banner: Key Findings & Index Comparison -->
+        <mxCell id="callout_perf" value="&lt;b&gt;KEY EMPIRICAL TAKEAWAYS:&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#1A365D&quot;&gt;&lt;b&gt;1. Indexing Speedup (66x):&lt;/b&gt; Without index (COLLSCAN), fetching 50 telemetry points requires &lt;b&gt;182.40 ms&lt;/b&gt; scanning 5,000 documents. With compound index &lt;i&gt;{ homeId: 1, timestamp: -1 }&lt;/i&gt;, execution drops to &lt;b&gt;2.75 ms&lt;/b&gt; scanning exactly 50 index keys.&lt;br&gt;&lt;b&gt;2. Durability Cost (+11.31 ms):&lt;/b&gt; Memory-acknowledged write (&lt;i&gt;w: 1&lt;/i&gt;) completes in &lt;b&gt;1.30 ms&lt;/b&gt;, whereas quorum-journaled write (&lt;i&gt;w: &quot;majority&quot;&lt;/i&gt;) requires &lt;b&gt;12.61 ms&lt;/b&gt;. This 11.31 ms network round-trip guarantee eliminates dirty reads and guarantees zero data loss under abrupt node failure.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="460" width="940" height="65" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

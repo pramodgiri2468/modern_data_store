@@ -1,0 +1,112 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_cassandra_ring" name="Figure 2 - Cassandra Token Ring">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;Apache Cassandra Masterless Peer-to-Peer Token Ring Network Topology&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Ring Circumference Guide (Ellipse) -->
+        <mxCell id="ring_guide" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;strokeColor=#CBD5E0;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="140" width="460" height="460" as="geometry" />
+        </mxCell>
+
+        <!-- Center Ring Hub Info Box -->
+        <mxCell id="center_hub" value="&lt;b&gt;CONSISTENT HASHING RING&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;&lt;b&gt;Murmur3Partitioner&lt;/b&gt;&lt;br&gt;Token Range: [-2&lt;sup&gt;63&lt;/sup&gt; to 2&lt;sup&gt;63&lt;/sup&gt; - 1]&lt;br&gt;&lt;hr&gt;&lt;b&gt;Gossip Protocol:&lt;/b&gt; 1s Heartbeat Mesh&lt;br&gt;&lt;b&gt;Failure Detector:&lt;/b&gt; &amp;Phi;-Accrual Metric&lt;br&gt;&lt;b&gt;Replication Factor:&lt;/b&gt; RF = 3 (Multi-Rack)&lt;br&gt;&lt;b&gt;Consistency:&lt;/b&gt; QUORUM = &amp;lfloor;3/2&amp;rfloor; + 1 = 2&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#2B6CB0;strokeWidth=2;fontColor=#1A365D;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="495" y="255" width="230" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- Node 1 (12 o'clock - Top) -->
+        <mxCell id="node1" value="&lt;b&gt;NODE 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 1A | 10.0.1.11&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x0000 0000&lt;br&gt;Primary Replica A&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="80" width="130" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Node 2 (2 o'clock - Top Right) -->
+        <mxCell id="node2" value="&lt;b&gt;NODE 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 1B | 10.0.1.12&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x2AAA AAAA&lt;br&gt;Replica Copy B&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="770" y="200" width="130" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Node 3 (4 o'clock - Bottom Right) -->
+        <mxCell id="node3" value="&lt;b&gt;NODE 3&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Rack 2A | 10.0.1.13&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x5555 5555&lt;br&gt;Replica Copy C&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="770" y="440" width="130" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Node 4 (6 o'clock - Bottom) -->
+        <mxCell id="node4" value="&lt;b&gt;NODE 4&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Rack 2B | 10.0.1.14&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0x8000 0000&lt;br&gt;Symmetric Peer&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="545" y="560" width="130" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Node 5 (8 o'clock - Bottom Left) -->
+        <mxCell id="node5" value="&lt;b&gt;NODE 5&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Rack 3A | 10.0.1.15&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0xAAAA AAAA&lt;br&gt;Symmetric Peer&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="440" width="130" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Node 6 (10 o'clock - Top Left - Coordinator) -->
+        <mxCell id="node6" value="&lt;b&gt;NODE 6 (COORDINATOR)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#7B341E&quot;&gt;Rack 3B | 10.0.1.16&lt;br&gt;&lt;b&gt;Token:&lt;/b&gt; 0xD555 5555&lt;br&gt;Receives Client Request&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFAF0;strokeColor=#DD6B20;fontColor=#7B341E;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="320" y="200" width="145" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Gossip Protocol Dashed Edges (Around Ring) -->
+        <mxCell id="e_gossip1" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node1" target="node2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gossip2" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node2" target="node3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gossip3" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node3" target="node4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gossip4" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node4" target="node5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gossip5" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node5" target="node6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gossip6" value="Gossip (1s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#38A169;strokeWidth=1.2;dashed=1;fontColor=#22543D;fontSize=8;" edge="1" parent="1" source="node6" target="node1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- External CQL Client Box -->
+        <mxCell id="client_cql" value="&lt;b&gt;IoThings Ingestion Client&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;CQL Native Driver&lt;br&gt;Key: &lt;b&gt;homeId = 'HOME_UK_001'&lt;/b&gt;&lt;br&gt;ConsistencyLevel: &lt;b&gt;QUORUM&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="120" y="210" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow: Client -> Coordinator -->
+        <mxCell id="e_client_coord" value="CQL Write Request" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6B46C1;strokeWidth=2;fontColor=#44337A;fontSize=9;" edge="1" parent="1" source="client_cql" target="node6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Replication Arrows from Coordinator (Node 6) to Replicas (Node 1, Node 2, Node 3) -->
+        <mxCell id="e_coord_rep1" value="Replica Write 1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6" target="node1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_coord_rep2" value="Replica Write 2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6" target="node2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="190" />
+              <mxPoint x="750" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_coord_rep3" value="Replica Write 3 (RF=3)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#DD6B20;strokeWidth=1.8;fontColor=#7B341E;fontSize=9;" edge="1" parent="1" source="node6" target="node3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="380" />
+              <mxPoint x="740" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Bottom Technical Summary Callout -->
+        <mxCell id="callout_cassandra" value="&lt;b&gt;CASSANDRA MASTERLESS PRINCIPLES:&lt;/b&gt; Symmetrical peer-to-peer ring eliminates master bottlenecks and Single Points of Failure (SPOF). Client can connect to &lt;b&gt;any arbitrary node&lt;/b&gt;, which acts as Coordinator for the transaction. The coordinator uses the Murmur3 hash of the partition key to forward writes to exactly RF=3 replica nodes. Strong consistency is satisfied because &lt;b&gt;R (2) + W (2) &amp;gt; RF (3)&lt;/b&gt;, guaranteeing read-your-writes consistency across network partitions." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="690" width="940" height="55" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

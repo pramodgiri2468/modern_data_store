@@ -1,0 +1,107 @@
+<mxfile host="app.diagrams.net" modified="2026-10-04T00:00:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="diag_neo4j_cluster" name="Figure 3 - Neo4j Causal Clustering">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Box -->
+        <mxCell id="title" value="&lt;b&gt;Neo4j High Availability &amp; Causal Clustering Architecture (Core Raft &amp; Scale-Out Read Replicas)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#144178;strokeColor=#0D2B52;fontColor=#FFFFFF;fontSize=15;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="940" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Client Tier -->
+        <mxCell id="box_client" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="940" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_client" value="&lt;b&gt;CLIENT APPLICATION &amp; SMART ROUTING DRIVER TIER&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="85" width="380" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="bolt_driver" value="&lt;b&gt;Neo4j Bolt Smart Routing Driver (bolt+routing://)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#4A5568&quot;&gt;Directs Cypher Writes to Core Leader | Load-balances Reads to Followers &amp; Read Replicas&lt;br&gt;Maintains Causal Chaining via Transaction Bookmarks (Read-Your-Own-Writes Guarantee)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#6B46C1;fontColor=#44337A;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="220" y="110" width="740" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Core Cluster Box -->
+        <mxCell id="box_core" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="195" width="940" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_core" value="&lt;b&gt;CORE CLUSTER TIER (RAFT PROTOCOL CONSENSUS &amp; ACID GRAPH PERSISTENCE)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="200" width="550" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Core Leader -->
+        <mxCell id="core_leader" value="&lt;b&gt;CORE LEADER (MASTER)&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#9B2C2C&quot;&gt;&lt;b&gt;Bolt: 7687 | HTTP: 7474&lt;/b&gt;&lt;br&gt;- Exclusive Coordinator for ACID Writes&lt;br&gt;- Appends to neostore.transaction.db&lt;br&gt;- Coordinates Raft Log Majority Quorum&lt;br&gt;- Index-Free Adjacency Graph Engine&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#FFF5F5;strokeColor=#C53030;fontColor=#9B2C2C;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="225" width="260" height="135" as="geometry" />
+        </mxCell>
+
+        <!-- Core Follower 1 -->
+        <mxCell id="core_f1" value="&lt;b&gt;CORE FOLLOWER 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port: 7688 | Raft Voting Member&lt;br&gt;- Replicates Raft Transaction Log&lt;br&gt;- Local Native Graph Store Copy&lt;br&gt;- Eligible for Immediate Leader Election&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="160" y="295" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Core Follower 2 -->
+        <mxCell id="core_f2" value="&lt;b&gt;CORE FOLLOWER 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2C5282&quot;&gt;Port: 7689 | Raft Voting Member&lt;br&gt;- Replicates Raft Transaction Log&lt;br&gt;- Local Native Graph Store Copy&lt;br&gt;- Quorum Participant (Q = 2 of 3)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#EBF8FF;strokeColor=#2B6CB0;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="295" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Driver write arrow to Leader -->
+        <mxCell id="e_write" value="Cypher ACID Writes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#C53030;strokeWidth=2;fontColor=#9B2C2C;fontSize=9;" edge="1" parent="1" source="bolt_driver" target="core_leader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Raft Consensus Lines -->
+        <mxCell id="e_raft1" value="Raft Log Replication &amp; Pings" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="core_leader" target="core_f1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_raft2" value="Raft Log Replication &amp; Pings" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2B6CB0;strokeWidth=1.8;fontColor=#2C5282;fontSize=9;" edge="1" parent="1" source="core_leader" target="core_f2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_raft_f12" value="Peer Heartbeats (Quorum: 2/3)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#718096;strokeWidth=1.2;dashed=1;fontColor=#4A5568;fontSize=9;" edge="1" parent="1" source="core_f1" target="core_f2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="435" />
+              <mxPoint x="900" y="435" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Read Replica Tier -->
+        <mxCell id="box_rr" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F7FAFC;strokeColor=#CBD5E0;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="480" width="940" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_rr" value="&lt;b&gt;READ REPLICA SCALE-OUT TIER (ASYNCHRONOUS TRANSACTION LOG SHIPPING)&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#4A5568;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="135" y="485" width="580" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rr_1" value="&lt;b&gt;READ REPLICA 1&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7690 (Non-Voting)&lt;br&gt;Scales Cypher Read Queries&lt;br&gt;Asynchronous Catch-Up&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="160" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rr_2" value="&lt;b&gt;READ REPLICA 2&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7691 (Non-Voting)&lt;br&gt;Graph Traversals &amp; Analytics&lt;br&gt;Path Finding Queries&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rr_3" value="&lt;b&gt;READ REPLICA 3&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#22543D&quot;&gt;Port: 7692 (Non-Voting)&lt;br&gt;Security Audit Reports&lt;br&gt;External BI Dashboards&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#F0FFF4;strokeColor=#2F855A;fontColor=#22543D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="520" width="220" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- Log shipping arrows from Core to Read Replicas -->
+        <mxCell id="e_ship1" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_f1" target="rr_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship2" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_leader" target="rr_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship3" value="Async Log Catch-Up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2F855A;strokeWidth=1.5;fontColor=#22543D;fontSize=9;" edge="1" parent="1" source="core_f2" target="rr_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Summary Banner -->
+        <mxCell id="callout_neo4j" value="&lt;b&gt;NEO4J CAUSAL CLUSTERING PRINCIPLES:&lt;/b&gt; Core cluster members participate in Raft consensus, ensuring graph modifications (nodes, relationships, indexes) satisfy strict ACID durability ($Q = \lfloor 3/2 \rfloor + 1 = 2$). Non-voting Read Replicas scale out arbitrary graph traversals without degrading write throughput. The Bolt driver uses causal bookmark tokens to guarantee read-your-own-writes across asynchronous read replicas." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF8FF;strokeColor=#3182CE;fontColor=#2C5282;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="120" y="685" width="940" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
