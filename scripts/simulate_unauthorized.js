@@ -1,23 +1,10 @@
 #!/usr/bin/env node
-/**
- * IoThings Smart Main Gate - Unauthorized Sensor Data & Security Email Alert Trigger
- * 
- * Simulates an unauthorized sensor detection event (unauthorized person, unregistered RFID card, or intruder vehicle).
- * Verifies that the gate remains securely LOCKED, persists the audit event to MongoDB,
- * publishes the event across the embedded MQTT broker, and dispatches an urgent security alert email to pg016742@gmail.com.
- * 
- * Resilient Operation:
- * - If backend server is running on port 3000: sends via HTTP REST API.
- * - If backend server is NOT running: connects directly to MongoDB and dispatches email in-process.
- */
-
 require('dotenv').config();
 const http = require('http');
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 const args = process.argv.slice(2);
 
-// Options: --type rfid | alpr | person | tamper
 let eventType = 'PERSON';
 let identifier = null;
 let reason = null;
@@ -59,7 +46,7 @@ const req = http.request({
     try {
       const data = JSON.parse(body);
       printSummary(res.statusCode, data.message, data.data);
-    } catch (e) {
+    } catch {
       console.log('Response:', body);
     }
   });
@@ -67,7 +54,7 @@ const req = http.request({
 
 req.on('error', async (err) => {
   if (err.code === 'ECONNREFUSED') {
-    console.log(`[Info] Core server not running on port ${PORT}. Executing in standalone direct database mode...`);
+    console.log(`[sim] Server not running on port ${PORT}; falling back to direct database execution...`);
     try {
       const { connectDB } = require('../backend/config/database');
       await connectDB();
@@ -77,15 +64,14 @@ req.on('error', async (err) => {
         identifier: payloadObj.identifier,
         reason: payloadObj.reason
       });
-      printSummary(201, 'Unauthorized sensor data recorded and security alert email dispatched to pg016742@gmail.com', result);
+      printSummary(201, 'Unauthorized sensor event recorded and alert email dispatched to pg016742@gmail.com', result);
       setTimeout(() => process.exit(0), 1000);
     } catch (dbErr) {
-      console.error(`\n❌ Failed to execute simulation: ${dbErr.message}`);
-      console.error('Tip: To run via REST API, start the server first in another terminal with: npm start\n');
+      console.error(`[sim] Direct execution error: ${dbErr.message}`);
       process.exit(1);
     }
   } else {
-    console.error(`\n❌ Request error: ${err.message}\n`);
+    console.error(`[sim] Request error: ${err.message}`);
     process.exit(1);
   }
 });
@@ -100,7 +86,7 @@ function printSummary(statusCode, message, data) {
     console.log(`Gate Status: ${data.gateStatus || 'LOCKED'}`);
     console.log(`Reason:      ${data.reason}`);
     if (data.emailNotification) {
-      console.log(`Alert Email: ${data.emailNotification.recipient}`);
+      console.log(`Recipient:   ${data.emailNotification.recipient}`);
       if (data.emailNotification.previewUrl) {
         console.log(`Preview:     ${data.emailNotification.previewUrl}`);
       }

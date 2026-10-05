@@ -79,7 +79,6 @@ const gateEventSchema = new mongoose.Schema({
   collection: 'gate_events'
 });
 
-// Compound indexes for high performance query resolution
 gateEventSchema.index({ homeId: 1, timestamp: -1 });
 gateEventSchema.index({ eventType: 1, timestamp: -1 });
 gateEventSchema.index({ severity: 1, timestamp: -1 });

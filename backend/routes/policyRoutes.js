@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const AccessPolicy = require('../models/AccessPolicy');
-const { sendAuthorizedEntryNotification, sendUnauthorizedAttemptNotification } = require('../services/emailService');
+const { sendUnauthorizedAttemptNotification } = require('../services/emailService');
 
-// 1. CREATE - POST /api/policies
+// POST /api/policies - Create access policy
 router.post('/', async (req, res) => {
   try {
     const {
@@ -60,7 +60,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Access policy created successfully (CRUD: CREATE)',
+      message: 'Access policy created successfully',
       data: saved
     });
   } catch (err) {
@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 2. READ (ALL) - GET /api/policies
+// GET /api/policies - List policies with optional filtering
 router.get('/', async (req, res) => {
   try {
     const { homeId = 'home_uk_01', credentialType, isActive } = req.query;
@@ -89,7 +89,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. READ (SINGLE) - GET /api/policies/:id
+// GET /api/policies/:id - Fetch single policy by ID or identifier
 router.get('/:id', async (req, res) => {
   try {
     const policy = await AccessPolicy.findOne({
@@ -106,7 +106,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3. UPDATE - PUT /api/policies/:id
+// PUT /api/policies/:id - Update an existing policy
 router.put('/:id', async (req, res) => {
   try {
     const { holderName, userRole, notificationEmail, isActive, schedule, validUntil, notes } = req.body;
@@ -132,7 +132,7 @@ router.put('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Access policy updated successfully (CRUD: UPDATE)',
+      message: 'Access policy updated successfully',
       data: updated
     });
   } catch (err) {
@@ -140,7 +140,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 4. DELETE - DELETE /api/policies/:id
+// DELETE /api/policies/:id - Remove an access policy
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await AccessPolicy.findOneAndDelete({
@@ -153,7 +153,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Access policy for '${deleted.holderName}' deleted successfully (CRUD: DELETE)`,
+      message: `Access policy for '${deleted.holderName}' deleted successfully`,
       deletedId: deleted.policyId
     });
   } catch (err) {
@@ -161,7 +161,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// VERIFY CREDENTIAL - POST /api/policies/verify
+// POST /api/policies/verify - Verify credential authorization
 router.post('/verify', async (req, res) => {
   try {
     const { identifier } = req.body;
@@ -182,7 +182,7 @@ router.post('/verify', async (req, res) => {
           method: req.body.method || 'API_CREDENTIAL_VERIFY',
           reason: 'Unregistered or inactive credential',
           timestamp: new Date()
-        }).catch(err => console.error('[Policy Verify] Unauthorized alert email failed:', err));
+        }).catch(err => console.error('[policy:verify] Notification error:', err.message));
       }
 
       return res.json({
@@ -191,7 +191,6 @@ router.post('/verify', async (req, res) => {
       });
     }
 
-    // Check validity date
     if (policy.validUntil && new Date() > new Date(policy.validUntil)) {
       if (req.body.notify !== false) {
         sendUnauthorizedAttemptNotification({
@@ -202,7 +201,7 @@ router.post('/verify', async (req, res) => {
           method: req.body.method || 'API_CREDENTIAL_VERIFY',
           reason: `Credential expired on ${new Date(policy.validUntil).toISOString()}`,
           timestamp: new Date()
-        }).catch(err => console.error('[Policy Verify] Expired credential alert email failed:', err));
+        }).catch(err => console.error('[policy:verify] Expired credential notification error:', err.message));
       }
 
       return res.json({
@@ -210,8 +209,6 @@ router.post('/verify', async (req, res) => {
         reason: 'Credential expired'
       });
     }
-
-    // Routine authorized access is granted quietly without email dispatch (emails reserved strictly for unauthorized attempts)
 
     res.json({
       authorized: true,

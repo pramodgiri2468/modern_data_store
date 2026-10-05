@@ -1,8 +1,9 @@
 const http = require('http');
 const assert = require('assert');
-const mongoose = require('mongoose');
+const { spawn } = require('child_process');
 
 const BASE_URL = 'http://127.0.0.1:3000';
+let serverProcess = null;
 
 function makeRequest(method, path, body = null) {
   return new Promise((resolve, reject) => {
@@ -24,7 +25,7 @@ function makeRequest(method, path, body = null) {
         try {
           const parsed = JSON.parse(data);
           resolve({ status: res.statusCode, body: parsed });
-        } catch (e) {
+        } catch {
           resolve({ status: res.statusCode, body: data });
         }
       });
@@ -39,58 +40,59 @@ function makeRequest(method, path, body = null) {
 }
 
 async function runTests() {
-  console.log('Running API integration tests...\n');
+  console.log('Running API integration test suite...\n');
 
   try {
-    // 1. Health check
+    // Health check
     const health = await makeRequest('GET', '/health');
     assert.strictEqual(health.status, 200);
     assert.strictEqual(health.body.status, 'OK');
-    console.log('✓ PASS: GET /health returned 200 OK');
+    console.log('✓ GET /health (200 OK)');
 
-    // 2. Cluster Status
+    // Cluster Status
     const cluster = await makeRequest('GET', '/api/cluster/status');
     assert.strictEqual(cluster.status, 200);
     assert.strictEqual(cluster.body.success, true);
-    console.log(`✓ PASS: GET /api/cluster/status returned replicaSet: ${cluster.body.data.replicaSet}, Primary: ${cluster.body.data.primary}`);
+    console.log(`✓ GET /api/cluster/status (rs: ${cluster.body.data.replicaSet}, primary: ${cluster.body.data.primary})`);
 
-    // 3. Gate Status
+    // Gate Status
     const gateStatus = await makeRequest('GET', '/api/gate/status');
     assert.strictEqual(gateStatus.status, 200);
     assert.strictEqual(gateStatus.body.success, true);
-    console.log(`✓ PASS: GET /api/gate/status returned state: ${gateStatus.body.data.status}`);
+    console.log(`✓ GET /api/gate/status (state: ${gateStatus.body.data.status})`);
 
-    // 4. Gate Command (MQTT publish trigger)
+    // Gate Command
     const cmdRes = await makeRequest('POST', '/api/gate/command', { action: 'UNLOCK', reason: 'Test Unlock' });
     assert.strictEqual(cmdRes.status, 200);
     assert.strictEqual(cmdRes.body.success, true);
-    console.log(`✓ PASS: POST /api/gate/command dispatched 'UNLOCK' via MQTT`);
+    console.log('✓ POST /api/gate/command (dispatched UNLOCK via MQTT)');
 
-    // 5. Sensor Events Query
+    // Sensor Events Query
     const eventsRes = await makeRequest('GET', '/api/sensors/events?limit=10');
     assert.strictEqual(eventsRes.status, 200);
     assert.strictEqual(eventsRes.body.success, true);
     assert(eventsRes.body.data.length > 0);
-    console.log(`✓ PASS: GET /api/sensors/events returned ${eventsRes.body.data.length} records (Total: ${eventsRes.body.total})`);
+    console.log(`✓ GET /api/sensors/events (${eventsRes.body.data.length} records returned, total: ${eventsRes.body.total})`);
 
-    // 5b. Continuous Telemetry Generation (Both FULLY_CLOSED and FULLY_OPEN)
+    // Telemetry generation (FULLY_CLOSED)
     const genClosedRes = await makeRequest('POST', '/api/sensors/generate-telemetry', { restingState: 'FULLY_CLOSED', status: 'IDLE_CLOSED' });
     assert.strictEqual(genClosedRes.status, 201);
     assert.strictEqual(genClosedRes.body.success, true);
     assert.strictEqual(genClosedRes.body.restingState, 'FULLY_CLOSED');
     assert.strictEqual(genClosedRes.body.data.limitSwitch.restingState, 'FULLY_CLOSED');
     assert.strictEqual(genClosedRes.body.data.metrics.reedSwitchState, 'CLOSED');
-    console.log(`✓ PASS: POST /api/sensors/generate-telemetry successfully generated FULLY_CLOSED telemetry`);
+    console.log('✓ POST /api/sensors/generate-telemetry (FULLY_CLOSED boundary verified)');
 
+    // Telemetry generation (FULLY_OPEN)
     const genOpenRes = await makeRequest('POST', '/api/sensors/generate-telemetry', { restingState: 'FULLY_OPEN', status: 'OPEN' });
     assert.strictEqual(genOpenRes.status, 201);
     assert.strictEqual(genOpenRes.body.success, true);
     assert.strictEqual(genOpenRes.body.restingState, 'FULLY_OPEN');
     assert.strictEqual(genOpenRes.body.data.limitSwitch.restingState, 'FULLY_OPEN');
     assert.strictEqual(genOpenRes.body.data.metrics.reedSwitchState, 'OPEN');
-    console.log(`✓ PASS: POST /api/sensors/generate-telemetry successfully generated FULLY_OPEN telemetry`);
+    console.log('✓ POST /api/sensors/generate-telemetry (FULLY_OPEN boundary verified)');
 
-    // 6. Policy CRUD: CREATE
+    // Policy CRUD: CREATE
     const newPolicy = {
       credentialType: 'RFID_TAG',
       identifier: `TEST-TAG-${Date.now()}`,
@@ -101,55 +103,58 @@ async function runTests() {
     assert.strictEqual(createRes.status, 201);
     assert.strictEqual(createRes.body.success, true);
     const createdId = createRes.body.data.policyId;
-    console.log(`✓ PASS: POST /api/policies created policyId: ${createdId}`);
+    console.log(`✓ POST /api/policies (created ${createdId})`);
 
     // Policy CRUD: READ
     const readRes = await makeRequest('GET', `/api/policies/${createdId}`);
     assert.strictEqual(readRes.status, 200);
     assert.strictEqual(readRes.body.data.holderName, 'Automated Test User');
-    console.log(`✓ PASS: GET /api/policies/:id read policy successfully`);
+    console.log('✓ GET /api/policies/:id (retrieved policy)');
 
     // Policy CRUD: UPDATE
     const updateRes = await makeRequest('PUT', `/api/policies/${createdId}`, { holderName: 'Updated Test User' });
     assert.strictEqual(updateRes.status, 200);
     assert.strictEqual(updateRes.body.data.holderName, 'Updated Test User');
-    console.log(`✓ PASS: PUT /api/policies/:id updated policy holderName`);
+    console.log('✓ PUT /api/policies/:id (updated policy)');
 
-    // Policy Credential Verification
+    // Policy credential verification
     const verifyRes = await makeRequest('POST', '/api/policies/verify', { identifier: newPolicy.identifier });
     assert.strictEqual(verifyRes.status, 200);
     assert.strictEqual(verifyRes.body.authorized, true);
-    console.log(`✓ PASS: POST /api/policies/verify successfully authorized credential`);
+    console.log('✓ POST /api/policies/verify (authorized credential)');
 
     // Policy CRUD: DELETE
     const deleteRes = await makeRequest('DELETE', `/api/policies/${createdId}`);
     assert.strictEqual(deleteRes.status, 200);
     assert.strictEqual(deleteRes.body.success, true);
-    console.log(`✓ PASS: DELETE /api/policies/:id deleted policy`);
+    console.log('✓ DELETE /api/policies/:id (removed policy)');
 
-    // 7. Analytics Endpoints
+    // Analytics: Hourly Traffic
     const hourlyRes = await makeRequest('GET', '/api/analytics/hourly-traffic');
     assert.strictEqual(hourlyRes.status, 200);
     assert.strictEqual(hourlyRes.body.data.length, 24);
-    console.log(`✓ PASS: GET /api/analytics/hourly-traffic aggregated 24 hourly buckets`);
+    console.log('✓ GET /api/analytics/hourly-traffic (24 buckets returned)');
 
+    // Analytics: Security Incidents
     const secRes = await makeRequest('GET', '/api/analytics/security');
     assert.strictEqual(secRes.status, 200);
-    console.log(`✓ PASS: GET /api/analytics/security calculated ${secRes.body.data.totalSecurityIncidents} incidents`);
+    console.log(`✓ GET /api/analytics/security (${secRes.body.data.totalSecurityIncidents} incidents calculated)`);
 
+    // Analytics: Motor Health
     const motorRes = await makeRequest('GET', '/api/analytics/motor-health');
     assert.strictEqual(motorRes.status, 200);
-    console.log(`✓ PASS: GET /api/analytics/motor-health returned health score: ${motorRes.body.data.healthScore}`);
+    console.log(`✓ GET /api/analytics/motor-health (score: ${motorRes.body.data.healthScore})`);
 
+    // Analytics: Sensor Health
     const sensorHealthRes = await makeRequest('GET', '/api/analytics/sensor-health');
     assert.strictEqual(sensorHealthRes.status, 200);
     assert.strictEqual(sensorHealthRes.body.success, true);
     assert.ok(sensorHealthRes.body.data.photocell);
     assert.ok(sensorHealthRes.body.data.limitSwitch);
     assert.ok(sensorHealthRes.body.data.rfidReader);
-    console.log(`✓ PASS: GET /api/analytics/sensor-health verified 3 core sensors (Photocell: ${sensorHealthRes.body.data.photocell.status}, LimitSwitch: ${sensorHealthRes.body.data.limitSwitch.status}, RFID: ${sensorHealthRes.body.data.rfidReader.heartbeatStatus})`);
+    console.log(`✓ GET /api/analytics/sensor-health (Photocell: ${sensorHealthRes.body.data.photocell.status}, LimitSwitch: ${sensorHealthRes.body.data.limitSwitch.status}, RFID: ${sensorHealthRes.body.data.rfidReader.heartbeatStatus})`);
 
-    // 8. Authorized Entry (Emails Suppressed - Sent ONLY for Unauthorized Alerts)
+    // Routine Access Notification (no email dispatch)
     const testEmailRes = await makeRequest('POST', '/api/notifications/test', {
       email: 'jane.davies@iothings.co.uk',
       holderName: 'Dr. Jane Davies',
@@ -159,9 +164,9 @@ async function runTests() {
     assert.strictEqual(testEmailRes.body.success, true);
     assert.strictEqual(testEmailRes.body.data.emailDispatched, false);
     assert.ok(testEmailRes.body.data.recipient.includes('jane.davies@iothings.co.uk'));
-    console.log(`✓ PASS: POST /api/notifications/test confirmed authorized entry does NOT dispatch email (quiet routine access)`);
+    console.log('✓ POST /api/notifications/test (routine entry suppressed)');
 
-    // 8b. Unauthorized Security Alert Notification
+    // Security Alert Notification
     const testUnauthRes = await makeRequest('POST', '/api/notifications/test-unauthorized', {
       email: 'pg016742@gmail.com',
       identifier: 'UNKNOWN-INTRUDER-99'
@@ -169,15 +174,16 @@ async function runTests() {
     assert.strictEqual(testUnauthRes.status, 200);
     assert.strictEqual(testUnauthRes.body.success, true);
     assert.strictEqual(testUnauthRes.body.data.status, 'SECURITY_ALERT');
-    console.log(`✓ PASS: POST /api/notifications/test-unauthorized dispatched security alert for ${testUnauthRes.body.data.identifier}`);
+    console.log(`✓ POST /api/notifications/test-unauthorized (alert dispatched for ${testUnauthRes.body.data.identifier})`);
 
+    // Notification Log Query
     const listNotifRes = await makeRequest('GET', '/api/notifications');
     assert.strictEqual(listNotifRes.status, 200);
     assert.strictEqual(listNotifRes.body.success, true);
     assert.ok(listNotifRes.body.data.length > 0);
-    console.log(`✓ PASS: GET /api/notifications returned ${listNotifRes.body.data.length} dispatched email log records`);
+    console.log(`✓ GET /api/notifications (${listNotifRes.body.data.length} records retrieved)`);
 
-    // 9. Unauthorized Sensor Data & Intrusion Email Notification
+    // Unauthorized Sensor Data Endpoint
     const unauthSensorRes = await makeRequest('POST', '/api/sensors/unauthorized', {
       type: 'PERSON',
       identifier: 'UNAUTHORIZED-INTRUDER-42',
@@ -188,19 +194,20 @@ async function runTests() {
     assert.strictEqual(unauthSensorRes.body.data.gateStatus, 'LOCKED');
     assert.strictEqual(unauthSensorRes.body.data.lockEngaged, true);
     assert.strictEqual(unauthSensorRes.body.data.eventType, 'INTRUSION_DETECTED');
-    console.log(`✓ PASS: POST /api/sensors/unauthorized recorded intruder sensor data, kept gate LOCKED, and dispatched alert email to pg016742@gmail.com`);
+    console.log('✓ POST /api/sensors/unauthorized (lock preserved, alert sent to pg016742@gmail.com)');
 
-    // 10. Simulate Unauthorized Person Entrance via UI Simulation Route
+    // Simulated Person Intrusion via UI route
     const simPersonRes = await makeRequest('POST', '/api/sensors/simulate', {
       action: 'UNAUTHORIZED_PERSON'
     });
     assert.strictEqual(simPersonRes.status, 200);
     assert.strictEqual(simPersonRes.body.success, true);
     assert.ok(simPersonRes.body.message.includes('pg016742@gmail.com'));
-    console.log(`✓ PASS: POST /api/sensors/simulate (UNAUTHORIZED_PERSON) dispatched perimeter breach email alert`);
+    console.log('✓ POST /api/sensors/simulate (UNAUTHORIZED_PERSON handled)');
+
     console.log('\nAll 18 tests passed successfully.');
   } catch (err) {
-    console.error('Test failed:', err);
+    console.error('\nTest failed:', err);
     process.exit(1);
   } finally {
     if (serverProcess) {
@@ -210,15 +217,12 @@ async function runTests() {
   }
 }
 
-let serverProcess = null;
-
 async function ensureServerRunning() {
   try {
     await makeRequest('GET', '/health');
     return null;
-  } catch (e) {
-    console.log('[Test Harness] Server not running on port 3000, starting background instance...');
-    const { spawn } = require('child_process');
+  } catch {
+    console.log('[test:harness] Server not running on port 3000; spawning background instance...');
     serverProcess = spawn('node', ['backend/server.js'], {
       stdio: 'ignore',
       detached: false
@@ -227,17 +231,15 @@ async function ensureServerRunning() {
       await new Promise(r => setTimeout(r, 400));
       try {
         await makeRequest('GET', '/health');
-        console.log('[Test Harness] Server ready on http://127.0.0.1:3000\n');
+        console.log('[test:harness] Server ready on http://127.0.0.1:3000\n');
         return;
-      } catch (err) {}
+      } catch {}
     }
   }
 }
 
-// Allow standalone execution
 if (require.main === module) {
   ensureServerRunning().then(runTests);
 }
 
 module.exports = { runTests };
-

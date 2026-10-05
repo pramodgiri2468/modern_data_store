@@ -8,21 +8,16 @@ const MONGO_URI = process.env.MONGO_URI ||
   'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/iothings_gate?replicaSet=rs0&readPreference=primaryPreferred';
 
 async function seedDatabase() {
-  console.log('========================================================');
-  console.log(' IoThings UK GDPR-Compliant Synthetic Dataset Generator');
-  console.log(' Connecting to MongoDB Replica Set...');
-  console.log('========================================================');
+  console.log('[seed] Connecting to database...');
 
   try {
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000
-    });
+    await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 });
   } catch (err) {
-    console.warn(`Replica set connection failed (${err.message}). Connecting to standalone...`);
+    console.warn(`[seed] Cluster connection failed (${err.message}); falling back to standalone...`);
     await mongoose.connect('mongodb://127.0.0.1:27017/iothings_gate');
   }
 
-  console.log('Connected! Purging old demo records...');
+  console.log('[seed] Clearing existing collections...');
   await Promise.all([
     GateEvent.deleteMany({}),
     GateTelemetry.deleteMany({}),
@@ -30,8 +25,7 @@ async function seedDatabase() {
     GateDevice.deleteMany({})
   ]);
 
-  // 1. Seed IoT Hardware Devices
-  console.log('Seeding Gate Hardware Devices...');
+  // 1. Hardware Devices
   const devices = [
     {
       deviceId: 'DEV-CTRL-01',
@@ -119,10 +113,9 @@ async function seedDatabase() {
     }
   ];
   await GateDevice.insertMany(devices);
-  console.log(`✓ Inserted ${devices.length} Gate Devices.`);
+  console.log(`[seed] Inserted ${devices.length} gate devices`);
 
-  // 2. Seed Access Control Policies
-  console.log('Seeding Access Control Policies...');
+  // 2. Access Control Policies
   const policies = [
     {
       policyId: 'POL-001',
@@ -198,30 +191,26 @@ async function seedDatabase() {
     }
   ];
   await AccessPolicy.insertMany(policies);
-  console.log(`✓ Inserted ${policies.length} Access Policies.`);
+  console.log(`[seed] Inserted ${policies.length} access policies`);
 
-  // 3. Seed Realistic Historical Events (30 Days)
-  console.log('Generating 30 days of realistic sensor activation events (~2,500 records)...');
+  // 3. Historical Gate Events (30 Days)
   const events = [];
   const now = Date.now();
   const DAY_MS = 24 * 60 * 60 * 1000;
 
   for (let day = 30; day >= 0; day--) {
     const dayStart = now - day * DAY_MS;
-
-    // Simulate high-density daily activations: morning commutes, afternoon deliveries, evening returns
-    const cyclesCount = 45 + Math.floor(Math.random() * 25); // 45-70 events per day (~1,800-2,500 total)
+    const cyclesCount = 45 + Math.floor(Math.random() * 25);
 
     for (let c = 0; c < cyclesCount; c++) {
-      // Pick realistic hour: 7-9am (morning), 12-14pm (delivery), 17-20pm (evening), or random
       let hour;
       const r = Math.random();
       if (r < 0.35) {
-        hour = 7 + Math.floor(Math.random() * 3); // 7, 8, 9
+        hour = 7 + Math.floor(Math.random() * 3);
       } else if (r < 0.65) {
-        hour = 17 + Math.floor(Math.random() * 4); // 17, 18, 19, 20
+        hour = 17 + Math.floor(Math.random() * 4);
       } else if (r < 0.85) {
-        hour = 12 + Math.floor(Math.random() * 3); // 12, 13, 14
+        hour = 12 + Math.floor(Math.random() * 3);
       } else {
         hour = Math.floor(Math.random() * 24);
       }
@@ -231,10 +220,8 @@ async function seedDatabase() {
       const eventTime = new Date(dayStart);
       eventTime.setHours(hour, minute, second);
 
-      // Event Type Distribution
       const typeRand = Math.random();
       if (typeRand < 0.45) {
-        // Resident RFID
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -247,7 +234,6 @@ async function seedDatabase() {
           timestamp: eventTime
         });
       } else if (typeRand < 0.75) {
-        // ALPR Vehicle
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -260,7 +246,6 @@ async function seedDatabase() {
           timestamp: eventTime
         });
       } else if (typeRand < 0.88) {
-        // Manual remote open from mobile app
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -273,7 +258,6 @@ async function seedDatabase() {
           timestamp: eventTime
         });
       } else if (typeRand < 0.94) {
-        // Safety obstacle detected (auto-reverse)
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -286,7 +270,6 @@ async function seedDatabase() {
           timestamp: eventTime
         });
       } else if (typeRand < 0.98) {
-        // Unauthorized RFID attempt
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -299,7 +282,6 @@ async function seedDatabase() {
           timestamp: eventTime
         });
       } else {
-        // Tamper alarm test or overcurrent
         events.push({
           eventId: `EVT-${eventTime.getTime()}-${Math.floor(Math.random()*1000)}`,
           homeId: 'home_uk_01',
@@ -316,19 +298,17 @@ async function seedDatabase() {
   }
 
   await GateEvent.insertMany(events);
-  console.log(`✓ Inserted ${events.length} Historical Gate Events.`);
+  console.log(`[seed] Inserted ${events.length} historical events`);
 
-  // 4. Seed Continuous Telemetry Data Points at Exact 5-Minute Intervals
-  console.log('Generating continuous time-series telemetry at exact 5-minute intervals (past 14 days, ~4,032 points)...');
+  // 4. Historical Telemetry (Past 14 Days, 5-minute sampling)
   const telemetryPoints = [];
-  const FIVE_MIN_MS = 5 * 60 * 1000; // 300,000 ms
-  const total5MinPoints = 14 * 24 * 12; // 14 days * 24 hrs * 12 points/hr = 4,032 points
+  const FIVE_MIN_MS = 5 * 60 * 1000;
+  const total5MinPoints = 14 * 24 * 12;
 
   for (let i = total5MinPoints; i >= 0; i--) {
     const time = new Date(now - i * FIVE_MIN_MS);
     const hour = time.getHours();
 
-    // Diurnal variation for temperature and light matching real-world 5-minute sensor intervals
     const tempBase = 18.0 + 5.0 * Math.sin(((hour - 8) / 24) * 2 * Math.PI);
     const motorTemperatureC = parseFloat((tempBase + (Math.random() - 0.5) * 1.2).toFixed(1));
 
@@ -339,10 +319,6 @@ async function seedDatabase() {
       ambientLightLux = Math.round(10 + Math.random() * 15);
     }
 
-    // Historical 5-minute sampling distribution across 14 days (4,032 points):
-    // ~85% FULLY_CLOSED (resting locked shut)
-    // ~12% FULLY_OPEN (driveway access, resident car departure/arrival, deliveries)
-    // ~3% AJAR (opening or closing transit)
     let telemStatus = 'IDLE_CLOSED';
     let restingState = 'FULLY_CLOSED';
     let reedSwitchState = 'CLOSED';
@@ -350,7 +326,6 @@ async function seedDatabase() {
     let standbyPowerWatts = parseFloat((2.1 + (Math.random() - 0.5) * 0.3).toFixed(2));
     let lockEngaged = true;
 
-    // Simulate daytime openings (between 7am and 21pm)
     const isDay = hour >= 7 && hour <= 21;
     if (isDay && (i % 22 === 0 || i % 23 === 0)) {
       telemStatus = 'OPEN';
@@ -371,7 +346,6 @@ async function seedDatabase() {
     const isMoving = (restingState === 'AJAR');
     const beamContinuity = !isMoving && Math.random() > 0.01;
 
-    // 1. Photocell metrics
     let opticalSignalStrength = 95.0;
     let photocellHealth = 'HEALTHY';
     if (!beamContinuity) {
@@ -386,9 +360,6 @@ async function seedDatabase() {
       photocellHealth = 'HEALTHY';
     }
 
-    // 2. Limit Switch metrics (computed above in restingState & standbyPowerWatts)
-
-    // 3. RFID Reader metrics
     const noiseSpike = (i % 150 === 0);
     const backgroundNoiseDbm = noiseSpike 
       ? parseFloat((-61.0 + Math.random() * 4.0).toFixed(1)) 
@@ -430,17 +401,13 @@ async function seedDatabase() {
   }
 
   await GateTelemetry.insertMany(telemetryPoints);
-  console.log(`✓ Inserted ${telemetryPoints.length} Continuous 5-Minute Telemetry Records (14-day continuous series).`);
+  console.log(`[seed] Inserted ${telemetryPoints.length} telemetry records`);
 
-  console.log('========================================================');
-  console.log(' Synthetic Dataset Seeding Complete!');
-  console.log(' Database populated for distributed queries, CRUD, & reporting.');
-  console.log('========================================================');
-
+  console.log('[seed] Seeding completed successfully');
   await mongoose.disconnect();
 }
 
-seedDatabase().catch(err => {
-  console.error('Seeding failed:', err);
+seedDatabase().catch((err) => {
+  console.error('[seed] Seeding failed:', err);
   process.exit(1);
 });

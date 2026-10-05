@@ -1,7 +1,7 @@
 const { Aedes } = require('aedes');
 const net = require('net');
 
-const MQTT_PORT = process.env.MQTT_PORT || 1883;
+const MQTT_PORT = parseInt(process.env.MQTT_PORT, 10) || 1883;
 
 let serverInstance = null;
 let aedesInstance = null;
@@ -16,42 +16,46 @@ async function startBroker() {
 
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.warn(`[MQTT Broker] Port ${MQTT_PORT} in use, connecting to existing MQTT broker.`);
+        console.warn(`[mqtt:broker] Port ${MQTT_PORT} is in use; attaching to existing broker`);
       } else {
-        console.error('[MQTT Broker] Server error:', err);
+        console.error('[mqtt:broker] Server error:', err.message);
       }
       resolve(null);
     });
 
     server.listen(MQTT_PORT, '0.0.0.0', () => {
-      console.log(`[MQTT Broker] Aedes MQTT broker running on tcp://127.0.0.1:${MQTT_PORT}`);
+      console.log(`[mqtt:broker] Running on tcp://127.0.0.1:${MQTT_PORT}`);
       serverInstance = server;
       resolve(server);
     });
 
     aedesInstance.on('client', (client) => {
-      console.log(`[MQTT Broker] Client connected: ${client ? client.id : 'unknown'}`);
+      const id = client ? client.id : 'anonymous';
+      console.log(`[mqtt:broker] Client connected: ${id}`);
     });
 
     aedesInstance.on('clientDisconnect', (client) => {
-      console.log(`[MQTT Broker] Client disconnected: ${client ? client.id : 'unknown'}`);
+      const id = client ? client.id : 'anonymous';
+      console.log(`[mqtt:broker] Client disconnected: ${id}`);
     });
 
     aedesInstance.on('clientError', (client, err) => {
+      const id = client ? client.id : 'anonymous';
       if (err.message && err.message.includes('protocol version')) {
-        console.warn(`[MQTT Broker] ⚠️ Connection rejected for ${client ? client.id : 'client'}: Client attempted MQTT 5.0. Set 'MQTT Version' to '3.1.1' in MQTTX!`);
+        console.warn(`[mqtt:broker] Protocol version rejected for ${id}. Clients must connect via MQTT 3.1.1.`);
       } else {
-        console.warn(`[MQTT Broker] Client error (${client ? client.id : 'unknown'}):`, err.message);
+        console.warn(`[mqtt:broker] Client error (${id}): ${err.message}`);
       }
     });
 
     aedesInstance.on('connectionError', (client, err) => {
-      console.warn(`[MQTT Broker] Connection error (${client ? client.id : 'unknown'}):`, err.message);
+      const id = client ? client.id : 'anonymous';
+      console.warn(`[mqtt:broker] Connection error (${id}): ${err.message}`);
     });
 
     aedesInstance.on('publish', (packet, client) => {
       if (client && !packet.topic.includes('/telemetry')) {
-        console.log(`[MQTT Broker] [${packet.topic}] from ${client.id}: ${packet.payload.toString().substring(0, 100)}`);
+        console.log(`[mqtt:broker] ${packet.topic} (${client.id}): ${packet.payload.toString().substring(0, 80)}`);
       }
     });
   });

@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/notifications/test - Confirms authorized access (emails suppressed, sent only for unauthorized attempts)
+// POST /api/notifications/test - Test routine access verification (quiet, no email dispatch)
 router.post('/test', async (req, res) => {
   try {
     const { email, holderName = 'Pramod (Resident)', userRole = 'RESIDENT' } = req.body;
@@ -36,7 +36,7 @@ router.post('/test', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Authorized access verified for ${holderName}. Emails are strictly reserved for unauthorized intrusion alerts (no email dispatched).`,
+      message: `Access verified for ${holderName}. Routine entries do not dispatch alerts.`,
       data: {
         type: 'AUTHORIZED_ENTRY',
         status: 'QUIET_ENTRY',
@@ -52,7 +52,7 @@ router.post('/test', async (req, res) => {
   }
 });
 
-// POST /api/notifications/test-unauthorized - Trigger an unauthorized security alert email test
+// POST /api/notifications/test-unauthorized - Dispatch test security alert email
 router.post('/test-unauthorized', async (req, res) => {
   try {
     const {
@@ -76,7 +76,7 @@ router.post('/test-unauthorized', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Unauthorized security alert email dispatched to: ${targetEmail}`,
+      message: `Security alert email dispatched to ${targetEmail}`,
       data: record
     });
   } catch (err) {

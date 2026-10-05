@@ -1,22 +1,22 @@
 const mqtt = require('mqtt');
 
 const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://127.0.0.1:1883';
-const HOME_ID = 'home_uk_01';
-const GATE_ID = 'gate_main_01';
+const HOME_ID = process.env.HOME_ID || 'home_uk_01';
+const GATE_ID = process.env.GATE_ID || 'gate_main_01';
+const TELEMETRY_INTERVAL_MS = parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000;
 
-console.log('[Simulator] Starting Main Gate Hardware Simulator...');
+console.log('[simulator] Connecting hardware simulator to MQTT broker at', BROKER_URL);
 
 const client = mqtt.connect(BROKER_URL, {
-  clientId: `hardware_simulator_${Math.random().toString(16).slice(2, 8)}`,
+  clientId: `hw_sim_${Math.random().toString(16).slice(2, 8)}`,
   reconnectPeriod: 2000
 });
 
-// Hardware state representation
 let gateState = {
-  status: 'LOCKED', // LOCKED, IDLE_CLOSED, OPENING, OPEN, CLOSING, OBSTACLE_HOLD
+  status: 'LOCKED',
   lockEngaged: true,
-  reedSwitchState: 'CLOSED', // CLOSED, AJAR, OPEN
-  obstacleDistanceCm: 280,   // Driveway clearance
+  reedSwitchState: 'CLOSED',
+  obstacleDistanceCm: 280,
   pirMotionDetected: false,
   motorCurrentAmps: 0.0,
   motorTemperatureC: 21.5,
@@ -26,34 +26,27 @@ let gateState = {
 
 let autoCloseTimer = null;
 let movementInterval = null;
-
-const TELEMETRY_INTERVAL_MS = parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000; // 15 seconds default (15,000 ms)
+let simTelemetryCycle = 0;
 
 client.on('connect', () => {
-  console.log('[Simulator] Connected to MQTT Broker! Listening for gate commands...');
-  console.log(`[Simulator] Continuous telemetry generation configured for every ${TELEMETRY_INTERVAL_MS / 1000}s (${TELEMETRY_INTERVAL_MS} ms).`);
+  console.log('[simulator] Connected to broker. Subscribed to gate commands.');
+  console.log(`[simulator] Telemetry broadcast cadence: ${TELEMETRY_INTERVAL_MS / 1000}s`);
 
-  // Subscribe to commands topic
   const commandTopic = `iothings/home/${HOME_ID}/gate/commands`;
   client.subscribe(commandTopic, { qos: 1 });
 
-  // Publish first telemetry reading immediately on startup
   publishTelemetry();
-
-  // Start continuous telemetry loop at 5 minutes interval
   setInterval(publishTelemetry, TELEMETRY_INTERVAL_MS);
-
-  // Start autonomous event cycle (simulate cars / RFID arrivals)
   setInterval(simulateRealisticTraffic, 35000);
 });
 
 client.on('message', (topic, message) => {
   try {
     const cmd = JSON.parse(message.toString());
-    console.log(`[Simulator] Received command: ${cmd.action} (Reason: ${cmd.reason || 'N/A'})`);
+    console.log(`[simulator] Command received: ${cmd.action} (${cmd.reason || 'manual'})`);
     executeCommand(cmd.action);
   } catch (err) {
-    console.error('[Simulator] Command parsing error:', err.message);
+    console.error('[simulator] Failed to parse command:', err.message);
   }
 });
 
@@ -76,7 +69,7 @@ function executeCommand(action) {
         gateState.lockEngaged = true;
         gateState.status = 'LOCKED';
         publishStatus();
-        console.log('[Simulator] Magnetic deadbolt locked.');
+        console.log('[simulator] Deadbolt locked');
       }
       break;
     case 'UNLOCK':
@@ -84,7 +77,7 @@ function executeCommand(action) {
         gateState.lockEngaged = false;
         gateState.status = 'IDLE_CLOSED';
         publishStatus();
-        console.log('[Simulator] Magnetic deadbolt disengaged.');
+        console.log('[simulator] Deadbolt unlocked');
       }
       break;
     case 'HOLD_OPEN':
@@ -95,7 +88,7 @@ function executeCommand(action) {
       gateState.lockEngaged = false;
       publishStatus();
       publishTelemetry();
-      console.log('[Simulator] Gate held in permanent open position (FULLY_OPEN).');
+      console.log('[simulator] Gate held in open position');
       break;
   }
 }
@@ -106,7 +99,6 @@ function initiateOpenSequence() {
   if (movementInterval) clearInterval(movementInterval);
   if (autoCloseTimer) clearTimeout(autoCloseTimer);
 
-  console.log('[Simulator] Disengaging magnetic lock and starting motor opening cycle...');
   gateState.lockEngaged = false;
   gateState.status = 'OPENING';
   gateState.reedSwitchState = 'AJAR';
@@ -123,9 +115,8 @@ function initiateOpenSequence() {
       gateState.motorCurrentAmps = 0.0;
       publishStatus();
       publishTelemetry();
-      console.log('[Simulator] Gate reached FULLY OPEN position. Emitted FULLY_OPEN telemetry.');
+      console.log('[simulator] Gate reached FULLY_OPEN limit');
 
-      // Auto-close after 12 seconds
       autoCloseTimer = setTimeout(() => {
         initiateCloseSequence();
       }, 12000);
@@ -138,7 +129,6 @@ function initiateCloseSequence() {
 
   if (movementInterval) clearInterval(movementInterval);
 
-  console.log('[Simulator] Warning strobe active. Starting motor closing cycle...');
   gateState.status = 'CLOSING';
   gateState.reedSwitchState = 'AJAR';
   gateState.motorCurrentAmps = 4.1;
@@ -148,7 +138,6 @@ function initiateCloseSequence() {
   movementInterval = setInterval(() => {
     step++;
 
-    // Safety check during closure
     if (gateState.obstacleDistanceCm < 45) {
       clearInterval(movementInterval);
       handleSafetyReverse();
@@ -164,19 +153,18 @@ function initiateCloseSequence() {
       gateState.status = 'LOCKED';
       publishStatus();
       publishTelemetry();
-      console.log('[Simulator] Gate fully closed and magnetic lock engaged. Emitted FULLY_CLOSED telemetry.');
+      console.log('[simulator] Gate reached FULLY_CLOSED limit; locked');
     }
   }, 1000);
 }
 
 function handleSafetyReverse() {
   if (movementInterval) clearInterval(movementInterval);
-  console.warn('[Simulator] SAFETY REVERSE TRIGGERED! Obstacle detected in path.');
+  console.warn('[simulator] Obstacle detected during close. Executing safety reverse.');
   gateState.status = 'OBSTACLE_HOLD';
   gateState.motorCurrentAmps = 0.0;
   publishStatus();
 
-  // Reverse back to open after 1s pause
   setTimeout(() => {
     initiateOpenSequence();
   }, 1000);
@@ -188,23 +176,17 @@ function stopMotor() {
   gateState.motorCurrentAmps = 0.0;
   gateState.status = 'IDLE_CLOSED';
   publishStatus();
-  console.log('[Simulator] Motor stopped immediately.');
+  console.log('[simulator] Motor stopped');
 }
-
-let simTelemetryCycle = 0;
 
 function publishTelemetry() {
   if (!client.connected) return;
 
   simTelemetryCycle++;
 
-  // Add realistic jitter
   const noise = (Math.random() - 0.5) * 4;
   const temp = parseFloat((gateState.motorTemperatureC + (Math.random() - 0.5) * 0.2).toFixed(1));
 
-  // Mixed operational telemetry cycle across 15-second intervals:
-  // Dynamically rotates through realistic states: FULLY_CLOSED, FULLY_OPEN, AJAR,
-  // with varying photocell beam conditions (HEALTHY, OBSTRUCTED, DIRTY_LENS) and RFID noise.
   let status = gateState.status;
   let lockEngaged = gateState.lockEngaged;
   let reedSwitchState = gateState.reedSwitchState;
@@ -217,11 +199,9 @@ function publishTelemetry() {
   let antennaStatus = 'OPTIMAL';
   let backgroundNoise = -82.5;
 
-  // When not currently executing an active physical motor movement, cycle through realistic mixed profiles
   if (!movementInterval) {
     const cycleMode = simTelemetryCycle % 6;
     if (cycleMode === 0) {
-      // 1. Resting Locked Standby (FULLY_CLOSED)
       status = 'LOCKED';
       lockEngaged = true;
       reedSwitchState = 'CLOSED';
@@ -234,7 +214,6 @@ function publishTelemetry() {
       antennaStatus = 'OPTIMAL';
       backgroundNoise = -83.5;
     } else if (cycleMode === 1) {
-      // 2. Gate Opening Transit (AJAR)
       status = 'OPENING';
       lockEngaged = false;
       reedSwitchState = 'AJAR';
@@ -247,7 +226,6 @@ function publishTelemetry() {
       antennaStatus = 'OPTIMAL';
       backgroundNoise = -82.0;
     } else if (cycleMode === 2) {
-      // 3. Resting Fully Open (FULLY_OPEN - Resident / Delivery Hold)
       status = 'OPEN';
       lockEngaged = false;
       reedSwitchState = 'OPEN';
@@ -260,12 +238,11 @@ function publishTelemetry() {
       antennaStatus = 'OPTIMAL';
       backgroundNoise = -84.0;
     } else if (cycleMode === 3) {
-      // 4. Fully Open with Vehicle Traversal (FULLY_OPEN, Optical Beam Broken)
       status = 'OPEN';
       lockEngaged = false;
       reedSwitchState = 'OPEN';
       motorCurrentAmps = 0.0;
-      distance = 34; // Vehicle traversing photocell beam
+      distance = 34;
       pirMotion = true;
       beamContinuity = false;
       opticalSignal = 18.0;
@@ -273,7 +250,6 @@ function publishTelemetry() {
       antennaStatus = 'OPTIMAL';
       backgroundNoise = -81.0;
     } else if (cycleMode === 4) {
-      // 5. Gate Closing Transit (AJAR)
       status = 'CLOSING';
       lockEngaged = false;
       reedSwitchState = 'AJAR';
@@ -286,7 +262,6 @@ function publishTelemetry() {
       antennaStatus = 'OPTIMAL';
       backgroundNoise = -83.0;
     } else if (cycleMode === 5) {
-      // 6. Resting Closed with Sensor Variation (FULLY_CLOSED, Dirty Lens Warning, RFID Noise)
       status = 'IDLE_CLOSED';
       lockEngaged = true;
       reedSwitchState = 'CLOSED';
@@ -294,13 +269,12 @@ function publishTelemetry() {
       distance = 265;
       pirMotion = false;
       beamContinuity = true;
-      opticalSignal = 64.0; // Dust accumulation on photocell lens
+      opticalSignal = 64.0;
       photocellHealth = 'DIRTY_LENS_WARNING';
-      antennaStatus = 'DETUNED'; // Transient electromagnetic noise spike
+      antennaStatus = 'DETUNED';
       backgroundNoise = -62.0;
     }
 
-    // Update in-memory gateState
     gateState.status = status;
     gateState.lockEngaged = lockEngaged;
     gateState.reedSwitchState = reedSwitchState;
@@ -308,7 +282,6 @@ function publishTelemetry() {
     gateState.obstacleDistanceCm = distance;
     gateState.pirMotionDetected = pirMotion;
   } else {
-    // Actively commanded movement
     beamContinuity = distance >= 45;
     opticalSignal = beamContinuity ? 96.0 : 18.0;
     photocellHealth = beamContinuity ? 'HEALTHY' : 'OBSTRUCTED';
@@ -322,7 +295,7 @@ function publishTelemetry() {
   const photocell = {
     healthStatus: photocellHealth,
     opticalSignalStrength: opticalSignal,
-    beamContinuity: beamContinuity
+    beamContinuity
   };
 
   const limitSwitch = {
@@ -333,23 +306,23 @@ function publishTelemetry() {
 
   const rfidReader = {
     operationalHeartbeat: true,
-    antennaStatus: antennaStatus,
+    antennaStatus,
     backgroundNoiseDbm: backgroundNoise
   };
 
   const payload = {
     gateId: GATE_ID,
     homeId: HOME_ID,
-    status: status,
-    lockEngaged: lockEngaged,
+    status,
+    lockEngaged,
     photocell,
     limitSwitch,
     rfidReader,
     metrics: {
       obstacleDistanceCm: distance,
       pirMotionDetected: pirMotion,
-      reedSwitchState: reedSwitchState,
-      motorCurrentAmps: motorCurrentAmps,
+      reedSwitchState,
+      motorCurrentAmps,
       motorTemperatureC: temp,
       batteryBackupVoltage: 12.8,
       ambientLightLux: 520,
@@ -360,7 +333,7 @@ function publishTelemetry() {
 
   const topic = `iothings/home/${HOME_ID}/gate/telemetry`;
   client.publish(topic, JSON.stringify(payload), { qos: 0 });
-  console.log(`[Simulator] [${new Date().toLocaleTimeString()}] Published mixed telemetry (Cycle #${simTelemetryCycle}): LimitSwitch=${limitSwitch.restingState} (${limitSwitch.standbyPowerWatts}W) | Status=${status} | Reed=${reedSwitchState} | Photocell=${photocell.opticalSignalStrength}% (${photocell.healthStatus}, Beam=${beamContinuity ? 'CLEAR' : 'CUT'}) | RFID=${rfidReader.backgroundNoiseDbm}dBm (${rfidReader.antennaStatus})`);
+  console.log(`[simulator] Telemetry published: status=${status}, limit=${limitSwitch.restingState}, beam=${beamContinuity ? 'ok' : 'cut'}`);
 }
 
 function publishStatus() {
@@ -375,41 +348,21 @@ function publishStatus() {
   }), { qos: 1 });
 }
 
-// Autonomous realistic simulation cycle
 let cycleCount = 0;
 function simulateRealisticTraffic() {
   cycleCount++;
   const events = [
-    {
-      type: 'RFID_SCAN',
-      payload: { tagId: 'RFID-8842-A' } // Resident Pramod
-    },
-    {
-      type: 'ALPR_SCAN',
-      payload: { plateNumber: 'BC24-UKS' } // Resident Audi Q5
-    },
-    {
-      type: 'RFID_SCAN',
-      payload: { tagId: 'UNKNOWN-CLONE-99' } // Unauthorized Intruder RFID tag
-    },
-    {
-      type: 'RFID_SCAN',
-      payload: { tagId: 'RFID-1029-C' } // Resident Mark Davies
-    },
-    {
-      type: 'ALPR_SCAN',
-      payload: { plateNumber: 'DPD-998-UK' } // Delivery Van
-    },
-    {
-      type: 'ALPR_SCAN',
-      payload: { plateNumber: 'UNKNOWN-VAN-77' } // Unauthorized vehicle plate
-    }
+    { type: 'RFID_SCAN', payload: { tagId: 'RFID-8842-A' } },
+    { type: 'ALPR_SCAN', payload: { plateNumber: 'BC24-UKS' } },
+    { type: 'RFID_SCAN', payload: { tagId: 'UNKNOWN-CLONE-99' } },
+    { type: 'RFID_SCAN', payload: { tagId: 'RFID-1029-C' } },
+    { type: 'ALPR_SCAN', payload: { plateNumber: 'DPD-998-UK' } },
+    { type: 'ALPR_SCAN', payload: { plateNumber: 'UNKNOWN-VAN-77' } }
   ];
 
   const pick = events[cycleCount % events.length];
   const eventTopic = `iothings/home/${HOME_ID}/gate/events`;
 
-  // Brief motion detector activation before badge/vehicle scan
   gateState.pirMotionDetected = true;
   setTimeout(() => { gateState.pirMotionDetected = false; }, 6000);
 
@@ -423,5 +376,5 @@ function simulateRealisticTraffic() {
   };
 
   client.publish(eventTopic, JSON.stringify(eventPayload), { qos: 1 });
-  console.log(`[Simulator] Simulated external arrival: ${pick.type} ->`, pick.payload);
+  console.log(`[simulator] Simulated arrival: ${pick.type} ->`, pick.payload);
 }

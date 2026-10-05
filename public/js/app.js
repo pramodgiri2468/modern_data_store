@@ -563,7 +563,7 @@ async function fetchClusterStatus() {
   }
 }
 
-// Access Policies CRUD: Fetch and Render Table
+// Access Policies: Fetch and Render Table
 async function fetchPolicies() {
   const tbody = document.getElementById('policies-tbody');
   try {
@@ -604,14 +604,14 @@ async function fetchPolicies() {
   }
 }
 
-// Access Policies CRUD: Delete Policy
+// Delete policy
 async function deletePolicy(policyId) {
-  if (!confirm(`Are you sure you want to revoke and delete policy '${policyId}' from MongoDB?`)) return;
+  if (!confirm(`Are you sure you want to delete policy '${policyId}'?`)) return;
   try {
     const res = await fetch(`/api/policies/${policyId}`, { method: 'DELETE' });
     const json = await res.json();
     if (json.success) {
-      showSimFeedback(`✓ Access policy ${policyId} deleted (CRUD: DELETE)`);
+      showSimFeedback(`Access policy ${policyId} deleted`);
       fetchPolicies();
     }
   } catch (err) {
@@ -619,7 +619,7 @@ async function deletePolicy(policyId) {
   }
 }
 
-// Access Policies CRUD: Create Policy from Modal
+// Create policy
 async function handleCreatePolicy(e) {
   e.preventDefault();
   const type = document.getElementById('policy-type').value;
@@ -645,7 +645,7 @@ async function handleCreatePolicy(e) {
     if (json.success) {
       document.getElementById('add-policy-modal').classList.remove('active');
       document.getElementById('add-policy-form').reset();
-      showSimFeedback(`✓ Registered new ${type} for ${holderName} (CRUD: CREATE)`);
+      showSimFeedback(`Registered new ${type} for ${holderName}`);
       fetchPolicies();
     } else {
       alert(`Registration error: ${json.error}`);
@@ -840,7 +840,7 @@ function setupEventListeners() {
   const btnGenClosed = document.getElementById('btn-gen-closed-telemetry');
   if (btnGenClosed) {
     btnGenClosed.addEventListener('click', async () => {
-      showSimFeedback('Generating instantaneous FULLY_CLOSED telemetry sample...');
+      showSimFeedback('Generating FULLY_CLOSED telemetry sample...');
       try {
         const res = await fetch('/api/sensors/generate-telemetry', {
           method: 'POST',
@@ -849,14 +849,14 @@ function setupEventListeners() {
         });
         const json = await res.json();
         if (json.success) {
-          showSimFeedback('✓ FULLY_CLOSED telemetry sample generated and persisted to MongoDB!');
+          showSimFeedback('Generated FULLY_CLOSED telemetry sample');
           fetchGateStatus();
           fetchEvents();
         } else {
-          showSimFeedback(`✗ Error: ${json.error}`);
+          showSimFeedback(`Error: ${json.error}`);
         }
       } catch (err) {
-        showSimFeedback(`✗ Error: ${err.message}`);
+        showSimFeedback(`Error: ${err.message}`);
       }
     });
   }
@@ -864,7 +864,7 @@ function setupEventListeners() {
   const btnGenOpen = document.getElementById('btn-gen-open-telemetry');
   if (btnGenOpen) {
     btnGenOpen.addEventListener('click', async () => {
-      showSimFeedback('Generating instantaneous FULLY_OPEN telemetry sample...');
+      showSimFeedback('Generating FULLY_OPEN telemetry sample...');
       try {
         const res = await fetch('/api/sensors/generate-telemetry', {
           method: 'POST',
@@ -873,14 +873,14 @@ function setupEventListeners() {
         });
         const json = await res.json();
         if (json.success) {
-          showSimFeedback('✓ FULLY_OPEN telemetry sample generated and persisted to MongoDB!');
+          showSimFeedback('Generated FULLY_OPEN telemetry sample');
           fetchGateStatus();
           fetchEvents();
         } else {
-          showSimFeedback(`✗ Error: ${json.error}`);
+          showSimFeedback(`Error: ${json.error}`);
         }
       } catch (err) {
-        showSimFeedback(`✗ Error: ${err.message}`);
+        showSimFeedback(`Error: ${err.message}`);
       }
     });
   }
@@ -888,7 +888,7 @@ function setupEventListeners() {
   const btnGen5Min = document.getElementById('btn-gen-5min-telemetry');
   if (btnGen5Min) {
     btnGen5Min.addEventListener('click', async () => {
-      showSimFeedback('Generating instantaneous interval telemetry point...');
+      showSimFeedback('Generating telemetry reading...');
       try {
         const res = await fetch('/api/sensors/generate-telemetry', {
           method: 'POST',
@@ -897,14 +897,14 @@ function setupEventListeners() {
         });
         const json = await res.json();
         if (json.success) {
-          showSimFeedback(`✓ Telemetry point (${json.restingState || 'Sample'}) generated and persisted to MongoDB!`);
+          showSimFeedback(`Generated telemetry reading (${json.restingState || 'Sample'})`);
           fetchGateStatus();
           fetchEvents();
         } else {
-          showSimFeedback(`✗ Error: ${json.error}`);
+          showSimFeedback(`Error: ${json.error}`);
         }
       } catch (err) {
-        showSimFeedback(`✗ Error: ${err.message}`);
+        showSimFeedback(`Error: ${err.message}`);
       }
     });
   }
@@ -912,7 +912,7 @@ function setupEventListeners() {
   // Cluster refresh
   document.getElementById('btn-refresh-cluster').addEventListener('click', () => {
     fetchClusterStatus();
-    showSimFeedback('Refreshed MongoDB Replica Set status.');
+    showSimFeedback('Cluster status updated');
   });
 
   // Modal handlers

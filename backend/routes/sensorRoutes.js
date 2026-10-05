@@ -3,10 +3,9 @@ const router = express.Router();
 const GateEvent = require('../models/GateEvent');
 const GateTelemetry = require('../models/GateTelemetry');
 const mqttHandler = require('../mqtt/mqttHandler');
-const { sendUnauthorizedAttemptNotification } = require('../services/emailService');
 const { emitUnauthorizedSensorEvent } = require('../services/telemetryEmitter');
 
-// GET /api/sensors/events
+// GET /api/sensors/events - Fetch recent sensor and access events
 router.get('/events', async (req, res) => {
   try {
     const {
@@ -31,8 +30,8 @@ router.get('/events', async (req, res) => {
     const [events, total] = await Promise.all([
       GateEvent.find(query)
         .sort({ timestamp: -1 })
-        .skip(parseInt(skip))
-        .limit(Math.min(parseInt(limit), 200))
+        .skip(parseInt(skip, 10))
+        .limit(Math.min(parseInt(limit, 10), 200))
         .lean(),
       GateEvent.countDocuments(query)
     ]);
@@ -40,8 +39,8 @@ router.get('/events', async (req, res) => {
     res.json({
       success: true,
       total,
-      limit: parseInt(limit),
-      skip: parseInt(skip),
+      limit: parseInt(limit, 10),
+      skip: parseInt(skip, 10),
       data: events
     });
   } catch (err) {
@@ -49,7 +48,7 @@ router.get('/events', async (req, res) => {
   }
 });
 
-// POST /api/sensors/event - Ingest event directly or forward to MQTT
+// POST /api/sensors/event - Ingest event directly via REST
 router.post('/event', async (req, res) => {
   try {
     const {
@@ -91,31 +90,31 @@ router.post('/event', async (req, res) => {
   }
 });
 
-// GET /api/sensors/telemetry - Stream recent telemetry points
+// GET /api/sensors/telemetry - Fetch recent telemetry points
 router.get('/telemetry', async (req, res) => {
   try {
     const { gateId = 'gate_main_01', limit = 30 } = req.query;
 
     const telemetry = await GateTelemetry.find({ gateId })
       .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
+      .limit(parseInt(limit, 10))
       .lean();
 
     res.json({
       success: true,
       count: telemetry.length,
-      data: telemetry.reverse() // Chronological order
+      data: telemetry.reverse()
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// POST /api/sensors/unauthorized - Send unauthorized sensor data & dispatch security alert email
+// POST /api/sensors/unauthorized - Record intrusion and trigger alert notification
 router.post('/unauthorized', async (req, res) => {
   try {
     const {
-      type = 'RFID', // 'RFID', 'ALPR', 'PERSON', 'TAMPER'
+      type = 'RFID',
       identifier,
       personName = 'Unauthorized Person / Intruder',
       reason,
@@ -141,74 +140,64 @@ router.post('/unauthorized', async (req, res) => {
   }
 });
 
-// POST /api/sensors/simulate - Trigger interactive simulation events from the UI
+// POST /api/sensors/simulate - Trigger interactive simulation events from dashboard
 router.post('/simulate', async (req, res) => {
   try {
     const { action, homeId = 'home_uk_01', gateId = 'gate_main_01' } = req.body;
-
-    let resultMsg = '';
     const now = new Date();
+    let resultMsg = '';
 
     switch (action) {
       case 'RESIDENT_RFID': {
-        const payload = {
-          eventId: `SIM-RFID-${Date.now()}`,
-          gateId,
-          eventType: 'RFID_SCAN',
-          sensorId: 'sensor_rfid_pillar',
-          payload: { tagId: 'RFID-8842-A' },
-          timestamp: now.toISOString()
-        };
-        // Publish via MQTT to test full broker flow
         mqttHandler.publishCommand(homeId, gateId, 'OPEN', 'Resident RFID Scanned (Dr. Jane Davies)');
-        resultMsg = 'Simulated resident RFID badge tap (Jane Davies). Gate opening triggered!';
+        resultMsg = 'Simulated resident RFID badge tap (Jane Davies). Gate opening initiated.';
         break;
       }
 
       case 'UNAUTHORIZED_RFID': {
-        const result = await emitUnauthorizedSensorEvent({
+        await emitUnauthorizedSensorEvent({
           type: 'RFID',
           identifier: 'UNKNOWN-CLONE-99',
           personName: 'Unknown Intruder (Cloned Card)',
           reason: 'Unregistered RFID credential presented at gate pillar',
           customDate: now
         });
-        resultMsg = `Simulated unauthorized RFID scan (UNKNOWN-CLONE-99). Gate LOCKED! Security alert email dispatched to pg016742@gmail.com!`;
+        resultMsg = 'Simulated unauthorized RFID scan (UNKNOWN-CLONE-99). Gate remained locked and alert email dispatched to pg016742@gmail.com.';
         break;
       }
 
       case 'UNAUTHORIZED_ALPR': {
-        const result = await emitUnauthorizedSensorEvent({
+        await emitUnauthorizedSensorEvent({
           type: 'ALPR',
           identifier: 'UNKNOWN-INTRUDER-99',
           personName: 'Unregistered Vehicle Driver',
           reason: 'Unregistered vehicle license plate detected at driveway ALPR',
           customDate: now
         });
-        resultMsg = `Simulated unauthorized vehicle plate (UNKNOWN-INTRUDER-99). Gate LOCKED! Security alert email dispatched to pg016742@gmail.com!`;
+        resultMsg = 'Simulated unauthorized vehicle plate (UNKNOWN-INTRUDER-99). Gate remained locked and alert email dispatched to pg016742@gmail.com.';
         break;
       }
 
       case 'UNAUTHORIZED_PERSON': {
-        const result = await emitUnauthorizedSensorEvent({
+        await emitUnauthorizedSensorEvent({
           type: 'PERSON',
           identifier: 'UNAUTHORIZED-PEDESTRIAN-01',
           personName: 'Unauthorized Pedestrian / Intruder',
           reason: 'Unauthorized person entered property perimeter while gate is locked',
           customDate: now
         });
-        resultMsg = `Simulated unauthorized person entering perimeter! Gate LOCKED! Critical security alert email dispatched to pg016742@gmail.com!`;
+        resultMsg = 'Simulated unauthorized person entering perimeter. Gate locked and alert email dispatched to pg016742@gmail.com.';
         break;
       }
 
       case 'ALPR_VEHICLE': {
         mqttHandler.publishCommand(homeId, gateId, 'OPEN', 'Resident Vehicle Detected: BC24-UKS (Audi Q5)');
-        resultMsg = 'Simulated resident vehicle arrival (Plate: BC24-UKS). Gate opening triggered!';
+        resultMsg = 'Simulated resident vehicle arrival (Plate: BC24-UKS). Gate opening initiated.';
         break;
       }
 
       case 'SAFETY_OBSTACLE': {
-        mqttHandler.publishCommand(homeId, gateId, 'SAFETY_REVERSE', 'Ultrasonic sensor triggered: Child/vehicle in path');
+        mqttHandler.publishCommand(homeId, gateId, 'SAFETY_REVERSE', 'Ultrasonic sensor triggered: obstacle in path');
         const eventDoc = new GateEvent({
           eventId: `SIM-OBS-${Date.now()}`,
           homeId,
@@ -221,31 +210,31 @@ router.post('/simulate', async (req, res) => {
           timestamp: now
         });
         await eventDoc.save();
-        resultMsg = 'Simulated safety obstacle in gate swing zone! Gate auto-reversed!';
+        resultMsg = 'Simulated obstacle in gate swing path. Gate safety reversed.';
         break;
       }
 
       case 'TAMPER_ALARM': {
-        const result = await emitUnauthorizedSensorEvent({
+        await emitUnauthorizedSensorEvent({
           type: 'TAMPER',
           identifier: 'ENCLOSURE_SHOCK_3.8G',
           personName: 'Physical Intruder (Enclosure Tamper)',
-          reason: 'High vibration (3.8G) detected on control housing - possible forced entry attempt!',
+          reason: 'Vibration (3.8G) detected on control enclosure',
           customDate: now
         });
-        resultMsg = 'Simulated anti-tamper alarm! Critical security alert email dispatched to pg016742@gmail.com!';
+        resultMsg = 'Simulated anti-tamper alarm. Security alert email dispatched to pg016742@gmail.com.';
         break;
       }
 
       case 'GATE_HOLD_OPEN': {
-        mqttHandler.publishCommand(homeId, gateId, 'HOLD_OPEN', 'Simulated Permanent Hold Open');
-        resultMsg = 'Simulated HOLD OPEN! Gate held at FULLY_OPEN limit switch boundary (quiescent 2.3W standby).';
+        mqttHandler.publishCommand(homeId, gateId, 'HOLD_OPEN', 'Manual Hold Open');
+        resultMsg = 'Gate set to hold open at FULLY_OPEN limit switch position.';
         break;
       }
 
       case 'GATE_OPEN_CYCLE': {
-        mqttHandler.publishCommand(homeId, gateId, 'OPEN', 'Simulated Resident Arrival');
-        resultMsg = 'Simulated Gate Open cycle! Gate transitioning to FULLY_OPEN, holding, then auto-closing to FULLY_CLOSED.';
+        mqttHandler.publishCommand(homeId, gateId, 'OPEN', 'Resident Arrival Cycle');
+        resultMsg = 'Simulated standard gate cycle: opening to FULLY_OPEN, holding, and auto-closing.';
         break;
       }
 
@@ -259,7 +248,7 @@ router.post('/simulate', async (req, res) => {
   }
 });
 
-// POST /api/sensors/generate-telemetry - Generate a continuous interval sensor data reading (FULLY_CLOSED or FULLY_OPEN)
+// POST /api/sensors/generate-telemetry - Generate sensor data reading
 router.post('/generate-telemetry', async (req, res) => {
   try {
     const { 
@@ -284,7 +273,6 @@ router.post('/generate-telemetry', async (req, res) => {
 
     const currentState = mqttHandler.getGateState();
     
-    // Determine effective gate state and limit switch boundary
     let effectiveStatus = reqStatus || (reqRestingState === 'FULLY_OPEN' ? 'OPEN' : (reqRestingState === 'FULLY_CLOSED' ? 'IDLE_CLOSED' : (currentState.status || 'IDLE_CLOSED')));
     let effectiveRestingState = reqRestingState || (effectiveStatus === 'OPEN' ? 'FULLY_OPEN' : (effectiveStatus === 'IDLE_CLOSED' || effectiveStatus === 'LOCKED' ? 'FULLY_CLOSED' : 'AJAR'));
 
@@ -339,7 +327,6 @@ router.post('/generate-telemetry', async (req, res) => {
 
     const saved = await telemetryDoc.save();
 
-    // Broadcast over MQTT to telemetry topic
     mqttHandler.publishTelemetry(homeId, {
       gateId,
       homeId,
@@ -354,15 +341,15 @@ router.post('/generate-telemetry', async (req, res) => {
 
     const curIntervalMs = parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000;
     const intervalLabel = curIntervalMs >= 60000 
-      ? `${curIntervalMs / 60000} minutes (${curIntervalMs.toLocaleString()} ms)`
-      : `${curIntervalMs / 1000} seconds (${curIntervalMs.toLocaleString()} ms)`;
+      ? `${curIntervalMs / 60000}m (${curIntervalMs}ms)`
+      : `${curIntervalMs / 1000}s (${curIntervalMs}ms)`;
 
     res.status(201).json({
       success: true,
       interval: intervalLabel,
       restingState: effectiveRestingState,
       gateStatus: effectiveStatus,
-      message: `Continuous sensor telemetry point (${effectiveRestingState}) persisted to MongoDB and dispatched to MQTT`,
+      message: `Telemetry point (${effectiveRestingState}) saved`,
       data: saved
     });
   } catch (err) {

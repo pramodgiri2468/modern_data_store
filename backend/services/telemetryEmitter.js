@@ -10,17 +10,17 @@ const GATE_ID = process.env.GATE_ID || 'gate_main_01';
 let telemetryCycleCount = 0;
 
 /**
- * Generates and emits real-time sensor data reading at configured intervals (15s default).
- * Updates in-memory state, persists document to MongoDB Replica Set, and broadcasts over MQTT.
+ * Generates and records periodic sensor telemetry reading.
+ * Updates in-memory state, persists document to MongoDB, and publishes to MQTT.
  */
 async function emitSensorTelemetry(customDate = new Date()) {
   const hour = customDate.getHours();
 
-  // 1. Ambient motor temperature (natural diurnal curve)
+  // Model daily ambient temperature fluctuation
   const tempBase = 18.0 + 5.0 * Math.sin(((hour - 8) / 24) * 2 * Math.PI);
   const motorTemperatureC = parseFloat((tempBase + (Math.random() - 0.5) * 1.2).toFixed(1));
 
-  // 2. Diurnal sunlight lux curve (0 at night, up to 800 lux midday)
+  // Ambient lux based on time of day
   let lux = 10;
   if (hour >= 6 && hour <= 19) {
     lux = Math.round(150 + 650 * Math.sin(((hour - 6) / 13) * Math.PI) + (Math.random() - 0.5) * 60);
@@ -28,27 +28,22 @@ async function emitSensorTelemetry(customDate = new Date()) {
     lux = Math.round(10 + Math.random() * 15);
   }
 
-  // 3. Realistic driveway clearance (240 - 280cm when clear)
+  // Driveway clearance distance
   const isVehiclePassing = Math.random() < 0.04;
   let obstacleDistanceCm = isVehiclePassing
     ? Math.round(35 + Math.random() * 40)
     : Math.round(250 + (Math.random() - 0.5) * 20);
 
-  // 4. Optical Photocell Sensor baseline
   let beamContinuity = obstacleDistanceCm >= 45;
   let opticalSignalStrength = 96.0;
   let photocellHealth = 'HEALTHY';
 
-  // 5. Contactless RFID Reader baseline
   let backgroundNoiseDbm = parseFloat((-83.5 + (Math.random() - 0.5) * 3.0).toFixed(1));
   let antennaStatus = 'OPTIMAL';
 
   const currentState = mqttHandler.getGateState();
   telemetryCycleCount++;
 
-  // Mixed operational profiles across 15-second intervals:
-  // Dynamically produces a rich, realistic mix of sensor data:
-  // FULLY_CLOSED, FULLY_OPEN, and AJAR states, along with varied photocell beam conditions and RFID noise.
   let status = currentState.status || 'IDLE_CLOSED';
   let lockEngaged = currentState.lockEngaged !== undefined ? currentState.lockEngaged : true;
   let reedSwitchState = currentState.reedSwitchState || 'CLOSED';
@@ -57,10 +52,9 @@ async function emitSensorTelemetry(customDate = new Date()) {
   let standbyPowerWatts = 2.1;
   let pirMotionDetected = isVehiclePassing || Math.random() < 0.06;
 
-  // Cycle through mixed states every 15 seconds unless manual hold is active
+  // Simulate cyclic gate usage patterns
   const cycleMode = telemetryCycleCount % 6;
   if (cycleMode === 0) {
-    // 1. Resting Locked (FULLY_CLOSED)
     status = 'LOCKED';
     lockEngaged = true;
     reedSwitchState = 'CLOSED';
@@ -75,7 +69,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     antennaStatus = 'OPTIMAL';
     backgroundNoiseDbm = -83.5;
   } else if (cycleMode === 1) {
-    // 2. Gate Opening Transit (AJAR)
     status = 'OPENING';
     lockEngaged = false;
     reedSwitchState = 'AJAR';
@@ -90,7 +83,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     antennaStatus = 'OPTIMAL';
     backgroundNoiseDbm = -82.0;
   } else if (cycleMode === 2) {
-    // 3. Resting Fully Open (FULLY_OPEN - Resident / Delivery Hold)
     status = 'OPEN';
     lockEngaged = false;
     reedSwitchState = 'OPEN';
@@ -105,14 +97,13 @@ async function emitSensorTelemetry(customDate = new Date()) {
     antennaStatus = 'OPTIMAL';
     backgroundNoiseDbm = -84.0;
   } else if (cycleMode === 3) {
-    // 4. Fully Open with Vehicle Traversal (FULLY_OPEN, Optical Beam Interrupted)
     status = 'OPEN';
     lockEngaged = false;
     reedSwitchState = 'OPEN';
     restingState = 'FULLY_OPEN';
     standbyPowerWatts = 2.3;
     motorCurrentAmps = 0.0;
-    obstacleDistanceCm = 34; // Vehicle traversing photocell beam
+    obstacleDistanceCm = 34;
     pirMotionDetected = true;
     beamContinuity = false;
     opticalSignalStrength = 18.0;
@@ -120,7 +111,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     antennaStatus = 'OPTIMAL';
     backgroundNoiseDbm = -81.0;
   } else if (cycleMode === 4) {
-    // 5. Gate Closing Transit (AJAR)
     status = 'CLOSING';
     lockEngaged = false;
     reedSwitchState = 'AJAR';
@@ -135,7 +125,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     antennaStatus = 'OPTIMAL';
     backgroundNoiseDbm = -83.0;
   } else if (cycleMode === 5) {
-    // 6. Resting Closed with Sensor Variation (FULLY_CLOSED, Dirty Lens Warning, RFID Noise)
     status = 'IDLE_CLOSED';
     lockEngaged = true;
     reedSwitchState = 'CLOSED';
@@ -145,9 +134,9 @@ async function emitSensorTelemetry(customDate = new Date()) {
     obstacleDistanceCm = 265;
     pirMotionDetected = false;
     beamContinuity = true;
-    opticalSignalStrength = 64.0; // Dust accumulation on photocell lens
+    opticalSignalStrength = 64.0;
     photocellHealth = 'DIRTY_LENS_WARNING';
-    antennaStatus = 'DETUNED'; // Transient RF noise spike
+    antennaStatus = 'DETUNED';
     backgroundNoiseDbm = -62.0;
   }
 
@@ -183,7 +172,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     tamperVibrationG
   };
 
-  // 1. Update in-memory state & notify Web UI listeners
   mqttHandler.setGateState({
     status,
     lockEngaged,
@@ -197,7 +185,6 @@ async function emitSensorTelemetry(customDate = new Date()) {
     lastUpdated: customDate
   });
 
-  // 2. Persist to MongoDB
   const doc = new GateTelemetry({
     homeId: HOME_ID,
     gateId: GATE_ID,
@@ -213,11 +200,10 @@ async function emitSensorTelemetry(customDate = new Date()) {
   let saved = null;
   try {
     saved = await doc.save();
-  } catch (err) {
+  } catch {
     return null;
   }
 
-  // Broadcast to MQTT
   mqttHandler.publishTelemetry(HOME_ID, {
     gateId: GATE_ID,
     homeId: HOME_ID,
@@ -230,29 +216,25 @@ async function emitSensorTelemetry(customDate = new Date()) {
     timestamp: customDate.toISOString()
   });
 
-  // 3. Update device heartbeat
   GateDevice.updateOne({ deviceId: 'DEV-CTRL-01' }, { $set: { lastHeartbeat: customDate } }).catch(() => {});
 
   const timeStr = customDate.toLocaleTimeString();
-  const intervalSeconds = (parseInt(process.env.TELEMETRY_INTERVAL_MS, 10) || 15000) / 1000;
-  console.log(`[Sensor Telemetry ⏱ ${intervalSeconds}s] [${timeStr}] Status: ${status} | LimitSwitch: ${limitSwitch.restingState} (${limitSwitch.standbyPowerWatts}W) | Photocell: ${photocell.opticalSignalStrength}% (${photocell.healthStatus}, Beam: ${beamContinuity ? 'CLEAR' : 'OBSTRUCTED'}) | RFID: ${rfidReader.backgroundNoiseDbm}dBm (${rfidReader.antennaStatus})`);
+  console.log(`[telemetry] ${timeStr} | ${status} | Limit: ${limitSwitch.restingState} (${limitSwitch.standbyPowerWatts}W) | Photocell: ${photocell.opticalSignalStrength}% | RFID: ${rfidReader.backgroundNoiseDbm}dBm`);
 
-  // 4a. Autonomous periodic authorized gate cycle (every 6 cycles = ~90s)
-  // Exercises FULLY_OPEN limit switch resting state and realistic resident movements
+  // Periodic simulated cycle
   const autoGateCycles = process.env.AUTO_GATE_CYCLES !== 'false';
   if (autoGateCycles && telemetryCycleCount % 6 === 0 && currentState.status !== 'OPEN') {
     const cycleType = (telemetryCycleCount % 12 === 0) ? 'RESIDENT_RFID' : 'RESIDENT_ALPR';
-    console.log(`[Auto Simulator Cycle] Triggering authorized resident entrance (${cycleType}). Opening gate to FULLY_OPEN...`);
+    console.log(`[telemetry] Cycling gate for simulated resident entry (${cycleType})`);
     mqttHandler.publishCommand(HOME_ID, GATE_ID, 'OPEN', `Autonomous Cycle: Authorized Resident (${cycleType})`);
   }
 
-  // 4b. Autonomous periodic unauthorized sensor event emission (every 8 cycles if configured)
   const unauthCycles = parseInt(process.env.AUTO_UNAUTHORIZED_INTERVAL_CYCLES || '0', 10);
   if (unauthCycles > 0 && telemetryCycleCount % (unauthCycles * 2) === unauthCycles) {
     const types = ['PERSON', 'RFID', 'ALPR', 'TAMPER'];
     const selected = types[Math.floor(Math.random() * types.length)];
     emitUnauthorizedSensorEvent({ type: selected }).catch(err => {
-      console.error('[Telemetry] Periodic unauthorized emission error:', err.message);
+      console.error('[telemetry] Background alert simulation error:', err.message);
     });
   }
 
@@ -260,12 +242,11 @@ async function emitSensorTelemetry(customDate = new Date()) {
 }
 
 /**
- * Emits an unauthorized sensor event (unauthorized person, unregistered RFID card, or intruder vehicle).
- * Verifies the gate remains securely locked, persists to MongoDB, broadcasts over MQTT,
- * and automatically dispatches an urgent security alert email to pg016742@gmail.com.
+ * Handles unauthorized access attempts and perimeter events.
+ * Keeps gate locked, stores audit record, and triggers alert email.
  */
 async function emitUnauthorizedSensorEvent({
-  type = 'PERSON', // 'PERSON', 'RFID', 'ALPR', 'TAMPER'
+  type = 'PERSON',
   identifier = null,
   personName = 'Unauthorized Person / Intruder',
   reason = null,
@@ -305,7 +286,6 @@ async function emitUnauthorizedSensorEvent({
     failureReason = reason || 'High physical vibration shock detected on gate controller enclosure';
   }
 
-  // 1. Maintain gate lock integrity
   mqttHandler.setGateState({
     status: 'LOCKED',
     lockEngaged: true,
@@ -313,7 +293,6 @@ async function emitUnauthorizedSensorEvent({
     lastUpdated: customDate
   });
 
-  // 2. Persist to MongoDB Replica Set (gate_events)
   const eventId = `EVT-UNAUTH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const eventDoc = new GateEvent({
     eventId,
@@ -335,14 +314,12 @@ async function emitUnauthorizedSensorEvent({
     timestamp: customDate
   });
 
-  let savedEvent = null;
   try {
-    savedEvent = await eventDoc.save();
+    await eventDoc.save();
   } catch (err) {
-    console.error('[Telemetry] Failed to save unauthorized event:', err.message);
+    console.error('[telemetry] Failed to record unauthorized event:', err.message);
   }
 
-  // 3. Broadcast Event over MQTT
   mqttHandler.publishEvent(HOME_ID, {
     eventId,
     gateId: GATE_ID,
@@ -354,7 +331,6 @@ async function emitUnauthorizedSensorEvent({
     timestamp: customDate.toISOString()
   });
 
-  // 4. Dispatch Email Alert immediately to pg016742@gmail.com
   const emailNotification = await sendUnauthorizedAttemptNotification({
     homeId: HOME_ID,
     gateId: GATE_ID,
@@ -366,8 +342,7 @@ async function emitUnauthorizedSensorEvent({
   });
 
   const timeStr = customDate.toLocaleTimeString();
-  console.log(`\n🚨 [UNAUTHORIZED SENSOR DATA] [${timeStr}] Type: ${eventType} | ID: ${id} | Gate: LOCKED 🔒`);
-  console.log(`  └─ Security Alert Email dispatched to: pg016742@gmail.com (Alert ID: ${emailNotification?.id || 'DISPATCHED'})\n`);
+  console.log(`[security] ${timeStr} | Intrusion alert: ${eventType} (${id}) - Gate remains locked`);
 
   return {
     success: true,

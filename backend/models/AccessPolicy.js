@@ -38,11 +38,11 @@ const accessPolicySchema = new mongoose.Schema({
   schedule: {
     is24x7: { type: Boolean, default: true },
     allowedDays: {
-      type: [Number], // 0: Sun, 1: Mon, ..., 6: Sat
+      type: [Number],
       default: [0, 1, 2, 3, 4, 5, 6]
     },
-    timeStart: { type: String, default: '00:00' }, // HH:mm
-    timeEnd: { type: String, default: '23:59' }    // HH:mm
+    timeStart: { type: String, default: '00:00' },
+    timeEnd: { type: String, default: '23:59' }
   },
   isActive: {
     type: Boolean,

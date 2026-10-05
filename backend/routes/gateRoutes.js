@@ -3,33 +3,37 @@ const router = express.Router();
 const mqttHandler = require('../mqtt/mqttHandler');
 const GateEvent = require('../models/GateEvent');
 
-// POST /api/gate/command
+const VALID_ACTIONS = ['OPEN', 'CLOSE', 'LOCK', 'UNLOCK', 'STOP', 'HOLD_OPEN', 'SAFETY_REVERSE'];
+
 router.post('/command', async (req, res) => {
   try {
     const { action, homeId = 'home_uk_01', gateId = 'gate_main_01', reason = 'Manual API Trigger' } = req.body;
 
-    const validActions = ['OPEN', 'CLOSE', 'LOCK', 'UNLOCK', 'STOP', 'HOLD_OPEN', 'SAFETY_REVERSE'];
-    if (!action || !validActions.includes(action.toUpperCase())) {
+    if (!action || !VALID_ACTIONS.includes(action.toUpperCase())) {
       return res.status(400).json({
         success: false,
-        error: `Invalid action. Supported actions: ${validActions.join(', ')}`
+        error: `Invalid action. Supported: ${VALID_ACTIONS.join(', ')}`
       });
     }
 
-    const upperAction = action.toUpperCase();
-    const published = mqttHandler.publishCommand(homeId, gateId, upperAction, reason);
+    const command = action.toUpperCase();
+    const published = mqttHandler.publishCommand(homeId, gateId, command, reason);
 
-    // Also record event for manual operations
-    if (['OPEN', 'CLOSE', 'LOCK', 'UNLOCK', 'STOP', 'HOLD_OPEN'].includes(upperAction)) {
+    if (['OPEN', 'CLOSE', 'LOCK', 'UNLOCK', 'STOP', 'HOLD_OPEN'].includes(command)) {
+      let eventType = 'MANUAL_REMOTE_OPEN';
+      if (command === 'CLOSE') eventType = 'MANUAL_REMOTE_CLOSE';
+      else if (command === 'LOCK') eventType = 'LOCK_ENGAGED';
+      else if (command === 'UNLOCK') eventType = 'LOCK_RELEASED';
+
       const eventDoc = new GateEvent({
         eventId: `CMD-EVT-${Date.now()}`,
         homeId,
         gateId,
-        eventType: upperAction === 'OPEN' ? 'MANUAL_REMOTE_OPEN' : upperAction === 'CLOSE' ? 'MANUAL_REMOTE_CLOSE' : upperAction === 'LOCK' ? 'LOCK_ENGAGED' : 'LOCK_RELEASED',
+        eventType,
         severity: 'INFO',
         sensorId: 'api_gateway',
         source: 'REST_API',
-        payload: { command: upperAction, reason, requester: req.ip },
+        payload: { command, reason, requester: req.ip },
         timestamp: new Date()
       });
       await eventDoc.save();
@@ -37,8 +41,8 @@ router.post('/command', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Command '${upperAction}' published via MQTT topic iothings/home/${homeId}/gate/commands`,
-      action: upperAction,
+      message: `Command '${command}' dispatched to gate controller`,
+      action: command,
       mqttPublished: published
     });
   } catch (err) {
@@ -46,7 +50,6 @@ router.post('/command', async (req, res) => {
   }
 });
 
-// GET /api/gate/status
 router.get('/status', (req, res) => {
   const state = mqttHandler.getGateState();
   res.json({

@@ -2,8 +2,7 @@ const mqtt = require('mqtt');
 const GateEvent = require('../models/GateEvent');
 const GateTelemetry = require('../models/GateTelemetry');
 const AccessPolicy = require('../models/AccessPolicy');
-const { sendAuthorizedEntryNotification, sendUnauthorizedAttemptNotification } = require('../services/emailService');
-const { v4: uuidv4 } = require('crypto');
+const { sendUnauthorizedAttemptNotification } = require('../services/emailService');
 
 let client = null;
 let currentGateState = {
@@ -15,8 +14,7 @@ let currentGateState = {
   obstacleDistanceCm: 250,
   pirMotionDetected: false,
   motorCurrentAmps: 0.0,
-  
-  // 3 Core Sensors requested by user
+
   photocell: {
     healthStatus: 'HEALTHY',
     opticalSignalStrength: 96.0,
@@ -45,7 +43,11 @@ function registerStateListener(cb) {
 
 function notifyListeners() {
   for (const cb of listeners) {
-    try { cb(currentGateState); } catch (e) { console.error('Listener err:', e); }
+    try {
+      cb(currentGateState);
+    } catch (e) {
+      console.error('[state] Listener error:', e.message);
+    }
   }
 }
 
@@ -57,20 +59,18 @@ function initMqttClient(brokerUrl = 'mqtt://127.0.0.1:1883') {
   });
 
   client.on('connect', () => {
-    console.log('[MQTT Client] Connected to MQTT broker. Subscribing to iothings/home/+/gate/#');
+    console.log('[mqtt] Connected to broker; listening on iothings/home/+/gate/#');
     client.subscribe('iothings/home/+/gate/#', { qos: 1 }, (err) => {
-      if (err) console.error('[MQTT Client] Subscription error:', err);
+      if (err) console.error('[mqtt] Subscription error:', err.message);
     });
   });
 
   client.on('message', async (topic, payloadBuffer) => {
     try {
-      const payloadStr = payloadBuffer.toString();
-      const data = JSON.parse(payloadStr);
-
+      const data = JSON.parse(payloadBuffer.toString());
       const parts = topic.split('/');
       const homeId = parts[2] || 'home_uk_01';
-      const category = parts[4]; // telemetry, events, status, commands
+      const category = parts[4];
 
       if (category === 'telemetry') {
         await handleTelemetryMessage(homeId, data);
@@ -80,12 +80,12 @@ function initMqttClient(brokerUrl = 'mqtt://127.0.0.1:1883') {
         handleStatusMessage(homeId, data);
       }
     } catch (err) {
-      console.error('[MQTT Client] Error processing message on topic', topic, err.message);
+      console.error(`[mqtt] Error parsing message on ${topic}:`, err.message);
     }
   });
 
   client.on('error', (err) => {
-    console.error('[MQTT Client] Error:', err.message);
+    console.error('[mqtt] Client error:', err.message);
   });
 
   return client;
@@ -117,7 +117,6 @@ async function handleTelemetryMessage(homeId, data) {
 
   const reedSwitchState = data.metrics?.reedSwitchState || (isOpen ? 'OPEN' : (isClosed ? 'CLOSED' : 'AJAR'));
 
-  // Update in-memory state
   currentGateState = {
     ...currentGateState,
     homeId,
@@ -125,7 +124,7 @@ async function handleTelemetryMessage(homeId, data) {
     status: data.status || currentGateState.status,
     lockEngaged: data.lockEngaged !== undefined ? data.lockEngaged : currentGateState.lockEngaged,
     obstacleDistanceCm: data.metrics?.obstacleDistanceCm || 250,
-    pirMotionDetected: !!data.metrics?.pirMotionDetected,
+    pirMotionDetected: Boolean(data.metrics?.pirMotionDetected),
     reedSwitchState,
     motorCurrentAmps: data.metrics?.motorCurrentAmps || (isOpen || isClosed ? 0.0 : 3.8),
     photocell,
@@ -136,10 +135,9 @@ async function handleTelemetryMessage(homeId, data) {
 
   notifyListeners();
 
-  // Persist to MongoDB
   try {
     const doc = new GateTelemetry({
-      homeId: homeId,
+      homeId,
       gateId: data.gateId || 'gate_main_01',
       status: currentGateState.status,
       photocell,
@@ -147,7 +145,7 @@ async function handleTelemetryMessage(homeId, data) {
       rfidReader,
       metrics: {
         obstacleDistanceCm: data.metrics?.obstacleDistanceCm ?? 250,
-        pirMotionDetected: !!data.metrics?.pirMotionDetected,
+        pirMotionDetected: Boolean(data.metrics?.pirMotionDetected),
         reedSwitchState,
         motorCurrentAmps: data.metrics?.motorCurrentAmps || (isOpen || isClosed ? 0.0 : 3.8),
         motorTemperatureC: limitSwitch.ambientMotorTemperatureC,
@@ -161,14 +159,14 @@ async function handleTelemetryMessage(homeId, data) {
     await doc.save();
   } catch (err) {
     if (err.name !== 'MongooseError') {
-      console.warn('[MQTT Client] Failed to save telemetry doc:', err.message);
+      console.warn('[telemetry] Failed to record reading:', err.message);
     }
   }
 
-  // Safety Automation: If gate is CLOSING and photocell beam is broken / obstacle < 40cm, auto-reverse!
+  // Safety trigger: if gate is closing and beam is broken, auto-reverse
   const beamBroken = photocell.beamContinuity === false || currentGateState.obstacleDistanceCm < 40;
   if (currentGateState.status === 'CLOSING' && beamBroken) {
-    console.warn(`[SAFETY TRIGGER] Photocell beam interrupted (${photocell.opticalSignalStrength}% optical signal)! Initiating safety reverse!`);
+    console.warn(`[safety] Photocell beam interrupted during closing sequence. Triggering auto-reverse.`);
     publishCommand(homeId, currentGateState.gateId, 'SAFETY_REVERSE', 'Photocell safety beam interrupted');
   }
 }
@@ -176,34 +174,30 @@ async function handleTelemetryMessage(homeId, data) {
 async function handleEventMessage(homeId, data) {
   const eventId = data.eventId || `EVT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-  // Avoid re-processing if already handled by internal pipeline
   if (data.source === 'SENSOR_TELEMETRY_PIPELINE' || data.alreadyHandled) {
     return;
   }
 
-  console.log(`[EVENT RECEIVED] ${data.eventType} on ${homeId}:`, data.payload);
+  console.log(`[event] ${data.eventType} (${homeId})`);
 
-  // Automated credential verification for RFID scans and ALPR scans
   if (data.eventType === 'RFID_SCAN') {
     const tagId = data.payload?.tagId;
     const policy = await AccessPolicy.findOne({ identifier: tagId, isActive: true });
 
     if (policy) {
-      console.log(`[ACCESS GRANTED] RFID ${tagId} belongs to ${policy.holderName} (${policy.userRole})`);
+      console.log(`[access] Granted for ${policy.holderName} (${policy.userRole}) via RFID ${tagId}`);
       data.eventType = 'RFID_ENTRY_SUCCESS';
       data.severity = 'INFO';
       data.payload.holderName = policy.holderName;
       data.payload.userRole = policy.userRole;
 
-      // Automatically trigger gate OPEN command!
       publishCommand(homeId, data.gateId || 'gate_main_01', 'OPEN', `Authorized RFID: ${policy.holderName}`);
     } else {
-      console.warn(`[ACCESS DENIED] Unrecognized or revoked RFID tag: ${tagId}`);
+      console.warn(`[access] Denied: unrecognized RFID tag ${tagId}`);
       data.eventType = 'RFID_ENTRY_DENIED';
       data.severity = 'WARN';
       data.payload.failureReason = 'Credential not registered or inactive in AccessPolicy';
 
-      // Dispatch urgent security alert email for unauthorized entry attempt
       sendUnauthorizedAttemptNotification({
         homeId,
         gateId: data.gateId || 'gate_main_01',
@@ -212,14 +206,14 @@ async function handleEventMessage(homeId, data) {
         method: 'RFID_CONTACTLESS_SCAN',
         reason: 'Unregistered or revoked RFID tag presented at gate pillar',
         timestamp: new Date()
-      }).catch(err => console.error('[MQTT Handler] Unauthorized alert email failed:', err));
+      }).catch(err => console.error('[notifications] Alert dispatch failed:', err.message));
     }
   } else if (data.eventType === 'ALPR_SCAN') {
     const plateNumber = data.payload?.plateNumber?.toUpperCase().replace(/\s+/g, '');
     const policy = await AccessPolicy.findOne({ identifier: plateNumber, isActive: true });
 
     if (policy) {
-      console.log(`[ACCESS GRANTED] Vehicle plate ${plateNumber} matched: ${policy.holderName}`);
+      console.log(`[access] Granted for ${policy.holderName} via plate ${plateNumber}`);
       data.eventType = 'ALPR_ENTRY_SUCCESS';
       data.severity = 'INFO';
       data.payload.holderName = policy.holderName;
@@ -227,12 +221,11 @@ async function handleEventMessage(homeId, data) {
 
       publishCommand(homeId, data.gateId || 'gate_main_01', 'OPEN', `Authorized Vehicle Plate: ${policy.holderName}`);
     } else {
-      console.warn(`[ACCESS DENIED] Unrecognized vehicle plate: ${plateNumber}`);
+      console.warn(`[access] Denied: unregistered plate ${plateNumber}`);
       data.eventType = 'ALPR_ENTRY_DENIED';
       data.severity = 'WARN';
       data.payload.failureReason = 'Unregistered vehicle license plate';
 
-      // Dispatch urgent security alert email for unauthorized entry attempt
       sendUnauthorizedAttemptNotification({
         homeId,
         gateId: data.gateId || 'gate_main_01',
@@ -241,10 +234,10 @@ async function handleEventMessage(homeId, data) {
         method: 'ALPR_VEHICLE_SCAN',
         reason: 'Unregistered vehicle license plate detected at driveway ALPR',
         timestamp: new Date()
-      }).catch(err => console.error('[MQTT Handler] Unauthorized alert email failed:', err));
+      }).catch(err => console.error('[notifications] Alert dispatch failed:', err.message));
     }
   } else if (data.eventType === 'TAMPER_ALARM' || data.eventType === 'PHYSICAL_BREACH') {
-    console.warn(`[SECURITY ALERT] Enclosure tamper alarm detected! Sensor: ${data.sensorId}`);
+    console.warn(`[security] Enclosure tamper alarm on ${data.sensorId}`);
     data.severity = 'CRITICAL';
     sendUnauthorizedAttemptNotification({
       homeId,
@@ -252,11 +245,11 @@ async function handleEventMessage(homeId, data) {
       credentialType: 'PHYSICAL_BREACH',
       identifier: data.payload?.vibrationG ? `TAMPER_${data.payload.vibrationG}G` : 'HOUSING_ACCELEROMETER',
       method: 'TAMPER_VIBRATION_SENSOR',
-      reason: data.payload?.notes || 'Critical physical tampering / vibration detected on gate control enclosure',
+      reason: data.payload?.notes || 'Physical shock detected on gate controller enclosure',
       timestamp: new Date()
-    }).catch(err => console.error('[MQTT Handler] Tamper alert email failed:', err));
+    }).catch(err => console.error('[notifications] Tamper alert failed:', err.message));
   } else if (data.eventType === 'UNAUTHORIZED_ENTRY' || data.eventType === 'INTRUSION_DETECTED') {
-    console.warn(`[SECURITY ALERT] Unauthorized person intrusion detected!`);
+    console.warn(`[security] Perimeter intrusion detected`);
     data.severity = 'CRITICAL';
     sendUnauthorizedAttemptNotification({
       homeId,
@@ -266,14 +259,13 @@ async function handleEventMessage(homeId, data) {
       method: data.payload?.method || 'PIR_PERIMETER_DETECTION',
       reason: data.payload?.reason || 'Unauthorized person entered property perimeter',
       timestamp: new Date()
-    }).catch(err => console.error('[MQTT Handler] Intrusion alert email failed:', err));
+    }).catch(err => console.error('[notifications] Intrusion alert failed:', err.message));
   }
 
-  // Persist event to MongoDB
   try {
     const eventDoc = new GateEvent({
-      eventId: eventId,
-      homeId: homeId,
+      eventId,
+      homeId,
       gateId: data.gateId || 'gate_main_01',
       eventType: data.eventType,
       severity: data.severity || 'INFO',
@@ -284,7 +276,7 @@ async function handleEventMessage(homeId, data) {
     });
     await eventDoc.save();
   } catch (err) {
-    console.warn('[MQTT Client] Failed to save event doc:', err.message);
+    console.warn('[events] Failed to persist event:', err.message);
   }
 }
 
@@ -324,11 +316,11 @@ async function persistTelemetryDoc(status, restingState, reedState, standbyPower
     const doc = new GateTelemetry({
       homeId: currentGateState.homeId || 'home_uk_01',
       gateId: currentGateState.gateId || 'gate_main_01',
-      status: status,
+      status,
       lockEngaged: (status === 'LOCKED' || status === 'IDLE_CLOSED'),
       photocell: currentGateState.photocell,
       limitSwitch: {
-        restingState: restingState,
+        restingState,
         ambientMotorTemperatureC: currentGateState.limitSwitch.ambientMotorTemperatureC,
         standbyPowerWatts: standbyPower
       },
@@ -346,8 +338,8 @@ async function persistTelemetryDoc(status, restingState, reedState, standbyPower
       timestamp: new Date()
     });
     await doc.save();
-  } catch (e) {
-    // Non-fatal
+  } catch {
+    // Non-fatal logging
   }
 }
 
@@ -377,7 +369,6 @@ function executeActuationSequence(homeId, gateId, action) {
     if (actuationTimer) clearTimeout(actuationTimer);
     if (autoCloseTimer) clearTimeout(autoCloseTimer);
 
-    // 1. Immediately transit to OPENING
     currentGateState = {
       ...currentGateState,
       status: 'OPENING',
@@ -393,7 +384,6 @@ function executeActuationSequence(homeId, gateId, action) {
     };
     notifyListeners();
 
-    // 2. Reach FULLY_OPEN after 3.5s
     actuationTimer = setTimeout(() => {
       currentGateState = {
         ...currentGateState,
@@ -411,7 +401,6 @@ function executeActuationSequence(homeId, gateId, action) {
       notifyListeners();
       persistTelemetryDoc('OPEN', 'FULLY_OPEN', 'OPEN', 2.3);
 
-      // 3. Auto-close after 12 seconds
       autoCloseTimer = setTimeout(() => {
         executeActuationSequence(homeId, gateId, 'CLOSE');
       }, 12000);
@@ -439,7 +428,6 @@ function executeActuationSequence(homeId, gateId, action) {
     };
     notifyListeners();
 
-    // Reach FULLY_CLOSED after 3.5s
     actuationTimer = setTimeout(() => {
       currentGateState = {
         ...currentGateState,
@@ -512,31 +500,28 @@ function executeActuationSequence(homeId, gateId, action) {
 }
 
 function publishCommand(homeId, gateId, action, reason = '') {
-  // Always trigger internal actuation sequence (ensuring standalone and simulated parity)
   executeActuationSequence(homeId, gateId, action);
 
   if (!client || !client.connected) {
-    console.warn('[MQTT Client] Note: MQTT client not connected yet, executed internal state actuation');
     return true;
   }
 
   const topic = `iothings/home/${homeId}/gate/commands`;
   const payload = JSON.stringify({
     commandId: `CMD-${Date.now()}`,
-    gateId: gateId,
-    action: action, // OPEN, CLOSE, LOCK, UNLOCK, STOP, SAFETY_REVERSE, HOLD_OPEN
-    reason: reason,
+    gateId,
+    action,
+    reason,
     requestedAt: new Date().toISOString()
   });
 
   client.publish(topic, payload, { qos: 1 });
-  console.log(`[MQTT Command Published] ${action} -> ${topic}`);
+  console.log(`[mqtt:cmd] ${action} -> ${topic}`);
   return true;
 }
 
 function publishEvent(homeId, eventData) {
   if (!client || !client.connected) {
-    console.warn('[MQTT Client] Cannot publish event: MQTT client not connected');
     return false;
   }
 
@@ -544,7 +529,7 @@ function publishEvent(homeId, eventData) {
   const payload = JSON.stringify(eventData);
 
   client.publish(topic, payload, { qos: 1 });
-  console.log(`[MQTT Event Published] ${eventData.eventType || 'EVENT'} -> ${topic}`);
+  console.log(`[mqtt:event] ${eventData.eventType || 'EVENT'} -> ${topic}`);
   return true;
 }
 
@@ -567,5 +552,8 @@ module.exports = {
   publishTelemetry,
   registerStateListener,
   getGateState: () => currentGateState,
-  setGateState: (partial) => { currentGateState = { ...currentGateState, ...partial }; notifyListeners(); }
+  setGateState: (partial) => {
+    currentGateState = { ...currentGateState, ...partial };
+    notifyListeners();
+  }
 };

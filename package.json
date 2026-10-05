@@ -1,8 +1,8 @@
 {
   "name": "modern_data_stores",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "IoThings Smart House Gate Automation Controller",
+  "main": "backend/server.js",
   "scripts": {
     "prestart": "lsof -ti:3000,1883 -sTCP:LISTEN | xargs kill -9 2>/dev/null || true",
     "start": "node backend/server.js",
@@ -18,10 +18,17 @@
     "benchmark": "node scripts/benchmark_queries.js",
     "cluster:start": "./scripts/start_replica_set.sh",
     "cluster:stop": "./scripts/stop_replica_set.sh",
+    "cluster:check": "./scripts/check_replication.sh",
     "mqtt:sub": "node scripts/mqtt_subscriber.js",
     "report:pdf": "\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --print-to-pdf=\"report/IoThings_Main_Gate_Automation_Report.pdf\" \"file://$(pwd)/report/IoThings_Main_Gate_Automation_Report.html\""
   },
-  "keywords": [],
+  "keywords": [
+    "iot",
+    "mqtt",
+    "mongodb",
+    "smart-home",
+    "gate-controller"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

@@ -1,22 +1,22 @@
 {
-  "timestamp": "2026-10-02T05:33:03.825Z",
+  "timestamp": "2026-10-05T07:32:00.797Z",
   "replicaSet": "rs0",
   "benchmarks": {
     "crud": {
-      "createMs": 10.72,
+      "createMs": 11.88,
       "readMs": 2.75,
-      "updateMs": 8.71,
-      "deleteMs": 12.92
+      "updateMs": 10.15,
+      "deleteMs": 7.9
     },
     "writeConcern": {
-      "w1Ms": 1.3,
-      "wMajorityMs": 12.61
+      "w1Ms": 1.27,
+      "wMajorityMs": 15.5
     },
     "aggregations": {
-      "hourlyTrafficMs": 2.76,
-      "securityStatsMs": 2.37,
-      "motorHealthMs": 1.86,
-      "sensorHealthMs": 6.15
+      "hourlyTrafficMs": 2.49,
+      "securityStatsMs": 1.94,
+      "motorHealthMs": 1.54,
+      "sensorHealthMs": 3.61
     }
   },
   "topology": {
